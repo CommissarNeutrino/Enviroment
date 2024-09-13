@@ -8,7 +8,7 @@ import json
 class Main_Frame():
 
     def __init__(self):
-        self.env = ShSV_WorldEnv(render_mode="rgb_array")
+        self.env = ShSV_WorldEnv(render_mode="rgb_array")    #name the variable in a fucking meaningfull way mother fucker!
         self.agent_patron = QLearningAgent(self.env.action_space())
         self.agent_altruist = Altruistic_agent(self.env.action_space()) 
 
