@@ -1,11 +1,11 @@
 from agents import QLearningAgent, Altruistic_agent
-from shsv_env_first import ShSV_WorldEnv
+from ShSV_project.env import ShSV_WorldEnv
 import matplotlib.pyplot as plt
 from typing import List, Optional
 import os
 import json
 
-class SHSV_Frame():
+class Main_Frame():
 
     def __init__(self):
         self.env = ShSV_WorldEnv(render_mode="rgb_array")
