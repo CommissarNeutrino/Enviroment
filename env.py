@@ -1,7 +1,7 @@
 import gymnasium as gym
 from gymnasium import spaces
 import pygame
-from pettingzoo import ParallelEnv
+# from pettingzoo import ParallelEnv
 import functools
 import random
 import numpy as np
@@ -17,14 +17,15 @@ Fix reset func
 """
 
 
-class ShSV_WorldEnv(gym.Env):
+class WorldEnv(gym.Env):
     metadata = {
         "render_modes": ["human", "rgb_array"], 
         "render_fps": 4,
-        "name": "shsv_env_v0",
+        "name": "v0",
         }
+    agents = {}
 
-    def __init__(self, render_mode=None, size_x=20, size_y=4):
+    def __init__(self, render_mode=None, size_x=20, size_y=4, key_position = np.array([1, 1])):
         self.size_x = size_x  # The size of the square grid
         self.size_y = size_y  # The size of the square grid
         self.window_size_x = 1024  # The size of the PyGame window
@@ -58,88 +59,55 @@ class ShSV_WorldEnv(gym.Env):
         """
         self.window = None
         self.clock = None
+        self.key_position = key_position
 
     def _get_obs(self):
-        return {"agent_patron": self._agent_patron_location, "agent_altruist": self._agent_altruist_location, "target": self._target_location}
+        state = {"target": self._target_location}
+        for agent_id, agent_instance in self.agents.items():
+            state[agent_id] = agent_instance.location
+        return state
 
     def _get_info(self):
         return {
-            "distance": np.linalg.norm(
-                self._agent_patron_location - self._target_location, ord=1
-            )
+            # "distance": np.linalg.norm(
+            #     self._agent_patron_location - self._target_location, ord=1
+            # )
         }
 
-    
     def reset(self, seed=None, options=None):
         # We need the following line to seed self.np_random
         super().reset(seed=seed)
-
         # Определим стартовую площадку для агентов (размер 5x4)
         agent_start_area_x = 5
         agent_start_area_y = self.size_y
-
-        # Выбираем случайное положение для первого агента
-        self._agent_patron_location = self.np_random.integers(
-            low=[0, 0], high=[agent_start_area_x, agent_start_area_y], size=2, dtype=int
-        )
-
-        # Для второго агента необходимо убедиться, что он не на той же клетке
-        # Вот здесь может быть уход в долгий цикл, пофиксить.
-        while True:
-            self._agent_altruist_location = self.np_random.integers(
-                low=[0, 0], high=[agent_start_area_x, agent_start_area_y], size=2, dtype=int
-            )
-            if not np.array_equal(self._agent_altruist_location, self._agent_patron_location):
-                break
-
+        available_locations = {(x, y) for x in range(agent_start_area_x) for y in range(agent_start_area_y)}
+        for agent_id, agent_instance in self.agents.items():
+            agent_instance.location = random.choice(list(available_locations))
+            available_locations.remove(agent_instance.location)
         # Определим область для появления цели (x между 7 и 12 включительно)
         target_area_x = (7, 13)  # 13, потому что верхняя граница в randint не включается
         target_area_y = self.size_y
-
-        self._target_location = self.np_random.integers(
+        self._target_location = tuple(self.np_random.integers(
             low=[target_area_x[0], 0], high=[target_area_x[1], target_area_y], size=2, dtype=int
-        )
-
+        ))
         observation = self._get_obs()
         info = self._get_info()
-
         if self.render_mode == "human":
             self._render_frame()
-
         return observation, info
 
 
     def step(self, action):
         # Map the action (element of {0,1,2,3}) to the direction we walk in
-        direction_altruist = self._action_to_direction[action["patron"]]
-        direction_patron = self._action_to_direction[action["altruist"]]
-        # ALTRIUST
-        # Проверяем, не является ли новая позиция неизменяемым блоком
-        new_position_altruist = self._agent_altruist_location + direction_altruist
-        if self._is_immutable_block(new_position_altruist):
-            new_position_altruist = self._agent_altruist_location  # Оставляем позицию без изменений, если блок неизменяемый
-        else:
-            # We use `np.clip` to make sure we don't leave the grid
-            new_position_altruist = np.clip(
-                self._agent_altruist_location + direction_altruist, [0, 0], [self.size_x - 1, self.size_y - 1]
-            )
-        # PATRON
-        new_position_patron = self._agent_patron_location + direction_patron
-        if self._is_immutable_block(new_position_patron):
-            new_position_patron = self._agent_patron_location  # Оставляем позицию без изменений, если блок неизменяемый
-        elif self._is_door(new_position_patron):
-            door_unlock_position = new_position_altruist - [1, 1]
-            if not np.array_equal(new_position_altruist, door_unlock_position):
-                new_position_patron = self._agent_patron_location
-        else:
-            # We use `np.clip` to make sure we don't leave the grid
-            new_position_patron = np.clip(
-                self._agent_patron_location + direction_patron, [0, 0], [self.size_x - 1, self.size_y - 1]
-            )
-        self._agent_patron_location = new_position_patron
-        self._agent_altruist_location = new_position_altruist
-        # An episode is done if the agent has reached the target
-        terminated = np.array_equal(self._agent_patron_location, self._target_location)
+        terminated= False
+        new_positions = set()
+        for agent_id, agent_instance in self.agents.items():
+            direction = self._action_to_direction[action[agent_id]]
+            agent_instance.location = self.decision_process(agent_instance, direction, new_positions)
+            if not terminated and agent_id.startswith("patron"):
+                if np.array_equal(agent_instance.location, self._target_location):
+                    terminated = True
+                    break
         reward = 1 if terminated else 0  # Binary sparse rewards
         observation = self._get_obs()
         info = self._get_info()
@@ -148,6 +116,41 @@ class ShSV_WorldEnv(gym.Env):
             self._render_frame()
 
         return observation, reward, terminated, False, info
+    
+    def decision_process(self, agent_instance, direction, new_positions):
+        new_position = self.decision_grid_edges(agent_instance, direction)
+        if self.decision_immutable_blocks(new_position) and self.decision_doors(agent_instance, new_position) and self.decision_other_agents(new_position, new_positions):
+            self.decision_key(agent_instance, new_position)
+            new_positions.add(tuple(new_position))
+            return tuple(new_position)
+        return agent_instance.location
+
+    def decision_grid_edges(self, agent_instance, direction):
+        new_position = np.clip(
+            agent_instance.location + direction, [0, 0], [self.size_x - 1, self.size_y - 1]
+        )
+        return new_position
+    
+    def decision_immutable_blocks(self, new_position):
+        if self._is_immutable_block(new_position):
+            return False
+        return True
+
+    def decision_doors(self, agent_instance, new_position):
+        if not self._is_door(new_position) or agent_instance.key:
+            return True
+        return False
+    
+    def decision_other_agents(self, new_position, new_positions):
+        if tuple(new_position) in new_positions:
+            return False
+        return True
+
+    def decision_key(self, agent_instance, new_position):
+        if np.array_equal(new_position, self.key_position):
+            agent_instance.key = True
+            # print(f"{agent_instance.agent_type} got the key")
+            self.key_position = np.array([-1, -1])
 
     def _is_immutable_block(self, position):
         # Проверка, является ли позиция неизменяемым блоком
@@ -155,20 +158,21 @@ class ShSV_WorldEnv(gym.Env):
 
     def _is_door(self, position):
         # Проверка, является ли позиция дверью
-        return tuple(position) in self._doors
+        # return tuple(position) in self._doors
+        return self._doors.get(tuple(position), False)
 
     def create_obstacles(self):
         """
         Автоматически создает препятствия и двери, начиная с 6-го столбца и далее через каждые 6 столбцов.
         Порядок: дверь, препятствие, дверь, препятствие.
         """
-        obstacles = []
-        doors = []
+        obstacles = set()
+        doors = {}
         for x in range(6, self.size_x, 6):
-            doors.append((x, 3))  # дверь
-            obstacles.append((x, 2))  # препятствие
-            doors.append((x, 1))  # дверь
-            obstacles.append((x, 0))  # препятствие
+            doors[x, 3] = True  # дверь
+            obstacles.add((x, 2))  # препятствие
+            doors[x, 1] = True  # дверь
+            obstacles.add((x, 0))  # препятствие
 
         self._immutable_blocks = obstacles
         self._doors = doors
@@ -242,24 +246,28 @@ class ShSV_WorldEnv(gym.Env):
             ),
         )
 
-        # Now we draw the agent-patron
-        pygame.draw.circle(
-            canvas,
-            (0, 0, 255),  # Цвет агента-патрона - синий
-            (
-                (self._agent_patron_location[0] + 0.5) * pix_square_size_x,
-                (self._agent_patron_location[1] + 0.5) * pix_square_size_y,
-            ),
-            min(pix_square_size_x, pix_square_size_y) / 3,  # Радиус зависит от наименьшего размера клетки
-        )
+        for agent_id, agent_instance in self.agents.items():
+            if agent_id.startswith("patron"):
+                color = (0, 0, 255)
+            elif agent_id.startswith("altruist"):
+                color = (0, 255, 0)
+            pygame.draw.circle(
+                canvas,
+                color,  # Цвет агента-патрона - синий
+                (
+                    (agent_instance.location[0] + 0.5) * pix_square_size_x,
+                    (agent_instance.location[1] + 0.5) * pix_square_size_y,
+                ),
+                min(pix_square_size_x, pix_square_size_y) / 3,  # Радиус зависит от наименьшего размера клетки
+            )
 
         # Now we draw the agent-altruist
         pygame.draw.circle(
             canvas,
-            (0, 255, 0),  # Цвет агента-альтруиста - зеленый
+            color,  # Цвет агента-альтруиста - зеленый
             (
-                (self._agent_altruist_location[0] + 0.5) * pix_square_size_x,
-                (self._agent_altruist_location[1] + 0.5) * pix_square_size_y,
+                (agent_instance.location[0] + 0.5) * pix_square_size_x,
+                (agent_instance.location[1] + 0.5) * pix_square_size_y,
             ),
             min(pix_square_size_x, pix_square_size_y) / 3,  # Радиус зависит от наименьшего размера клетки
         )

@@ -1,9 +1,16 @@
 import numpy as np
-import gymnasium as gym
-import matplotlib.pyplot as plt
+from typing import Tuple
 
-class QLearningAgent:
-    def __init__(self, action_space, alpha=0.1, gamma=0.99, epsilon=1.0, epsilon_decay=0.995, min_epsilon=0.01):
+class BaseAgent:
+    def __init__(self, agent_name: str = "", agent_type: str = "", location: Tuple = (), key: bool = False):
+        self.agent_name = agent_name
+        self.agent_type = agent_type
+        self.location = location
+        self.key = key
+
+class QLearningAgent(BaseAgent):
+    def __init__(self, action_space, alpha=0.1, gamma=0.99, epsilon=1.0, epsilon_decay=0.995, min_epsilon=0.01, **kwargs):
+        super().__init__(**kwargs)
         self.q_table = {}
         self.action_space = action_space
         self.alpha = alpha  # Learning rate
@@ -34,8 +41,9 @@ class QLearningAgent:
         self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
 
 
-class Altruistic_agent:
-    def __init__(self, action_space, alpha=0.1, gamma=0.99, epsilon=1.0, epsilon_decay=0.995, min_epsilon=0.01):
+class Altruistic_agent(BaseAgent):
+    def __init__(self, action_space, alpha=0.1, gamma=0.99, epsilon=1.0, epsilon_decay=0.995, min_epsilon=0.01, **kwargs):
+        super().__init__(**kwargs)
         self.q_table = {}
         self.action_space = action_space
         self.alpha = alpha  # Learning rate
@@ -43,6 +51,10 @@ class Altruistic_agent:
         self.epsilon = epsilon  # Exploration rate
         self.epsilon_decay = epsilon_decay
         self.min_epsilon = min_epsilon
+        self.key = False
+
+    def update_q(self, state, action, reward, next_state):
+        pass
 
     def get_q(self, state, action):
         return self.q_table.get((state, action), 0.0)
