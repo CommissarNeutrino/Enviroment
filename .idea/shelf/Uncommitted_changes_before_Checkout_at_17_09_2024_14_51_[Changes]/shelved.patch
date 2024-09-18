@@ -1,0 +1,358 @@
+Index: main.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from agents import QLearningAgent, Altruistic_agent\r\nfrom env import WorldEnv\r\nimport matplotlib.pyplot as plt\r\nfrom typing import List, Optional\r\nimport os\r\nimport json\r\n\r\nclass Main_Frame():\r\n\r\n    def venv_init(self, patron_num, altruist_num, render_mode):\r\n        self.env = WorldEnv(render_mode=render_mode)\r\n        self.add_agents(patron_num, altruist_num)\r\n\r\n    def add_agents(self, patron_num, altruist_num):\r\n        for counter in range(patron_num):\r\n            self.env.agents[f\"patron_{counter}\"] = QLearningAgent(self.env.action_space())\r\n        for counter in range(altruist_num):\r\n            self.env.agents[f\"altruist_{counter}\"] = Altruistic_agent(self.env.action_space())\r\n\r\n    def learning(self, patron_num: int = 1, altruist_num: int = 1, render_mode: str = \"rgb_array\", num_episodes: int = 1000):\r\n        self.venv_init(patron_num, altruist_num, render_mode)\r\n        rewards = []\r\n        for episode in range(num_episodes):\r\n            total_reward, steps = self.progon(learning_flag=True)\r\n            rewards.append(steps)\r\n            print(f\"Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}\")\r\n        self.cache_tables()\r\n        self.build_plot(rewards)\r\n        print(\"Episode finished!\")\r\n        self.env.close()\r\n\r\n    def checking_learning(self, patron_num: int = 1, altruist_num: int = 1, render_mode: str = \"human\", num_episodes: int = 10):\r\n        # Устанавливаем epsilon на минимальное значение и переводим в режим наблюдения\r\n        self.venv_init(patron_num, altruist_num, render_mode)\r\n        for agent_id, agent_instance in self.env.agents.items():\r\n            agent_instance.epsilon = 0.01\r\n        # Запускаем агента для тестирования его поведения\r\n        for episode in range(num_episodes):\r\n            total_reward, steps = self.progon(learning_flag=False)\r\n            print(f\"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}\")\r\n        self.env.close()\r\n\r\n    def progon(self, learning_flag: bool, steps: int = 0, total_reward: int = 0, action: dict = {}, possible_actions: int = 300, done = False):\r\n        state, _ = self.env.reset()\r\n        state_tupled = tuple(state.values())\r\n        while possible_actions>0 and not done:\r\n            steps += 1\r\n            for agent_id, agent_instance in self.env.agents.items():\r\n                old_agent_location = agent_instance.location\r\n                action[agent_id] = agent_instance.select_action(state_tupled)\r\n            next_state, reward, done, _, _ = self.env.step(action)\r\n            if learning_flag:\r\n                for agent_id, agent_instance in self.env.agents.items():\r\n                    agent_instance.update_q(state[agent_id], action[agent_id], reward, next_state[agent_id])\r\n                    agent_instance.decay_epsilon()\r\n            state = next_state\r\n            total_reward += reward\r\n            possible_actions -= 1\r\n            self.env.render()\r\n        return total_reward, steps\r\n\r\n    def cache_tables(self, cache_dir: str = \"cache\", try_dir_base: str = \"progon_\"):\r\n        if not os.path.exists(cache_dir):\r\n            os.makedirs(cache_dir)\r\n        existing_folders = [f for f in os.listdir(cache_dir) if f.startswith(try_dir_base) and os.path.isdir(os.path.join(cache_dir, f))]\r\n        if existing_folders:\r\n            max_i = max([int(f.split('_')[1]) for f in existing_folders])\r\n        else:\r\n            max_i = 0\r\n        new_folder = os.path.join(cache_dir, f\"{try_dir_base}{max_i + 1}\")\r\n        os.makedirs(new_folder)\r\n        for agent_id, agent_instance in self.env.agents.items():\r\n            table_agent_path = os.path.join(new_folder, f\"table_{agent_id}.json\")\r\n            table = self.serialize_keys(agent_instance.q_table)\r\n            print(agent_id, table)\r\n            with open(table_agent_path, 'w') as f1:\r\n                json.dump(table, f1)\r\n        print(f\"Q-таблицы сохранены в {new_folder}\")\r\n        \r\n    def serialize_keys(self, table):\r\n        new_table = {}\r\n        for key, value in table.items():\r\n            str_key = str(key)\r\n            new_table[str_key] = value\r\n        return new_table\r\n\r\n    def load_tables(self, progon_number: int, cache_dir: str = \"cache\", try_dir_base: str = \"progon_\"):\r\n        progon_folder = os.path.join(cache_dir, f\"{try_dir_base}{progon_number}\")\r\n        if not os.path.exists(progon_folder):\r\n            raise ValueError(f\"Попытка {progon_number} не существует.\")\r\n        table_patron_path = os.path.join(progon_folder, \"table_patron.json\")\r\n        table_altruist_path = os.path.join(progon_folder, \"table_altruist.json\")\r\n        if not os.path.exists(table_patron_path) or not os.path.exists(table_altruist_path):\r\n            raise ValueError(f\"Файлы table_1.json и/или table_2.json не найдены в папке {progon_folder}.\")\r\n        # Загружаем table_1\r\n        with open(table_patron_path, 'r') as f1:\r\n            self.agent_patron.q_table = json.load(f1)\r\n        # Загружаем table_2\r\n        with open(table_altruist_path, 'r') as f2:\r\n            self.agent_altruist.q_table = json.load(f2)\r\n        print(f\"Таблицы успешно загружены из {progon_folder}\")\r\n\r\n    def build_plot(self, rewards: List):\r\n        plt.plot(rewards)\r\n        plt.xlabel('Episode')\r\n        plt.ylabel('Total Steps')\r\n        plt.title('Learning Progress')\r\n        plt.show()\r\n\r\n    def main_frame(self, progon_number: Optional[int] = None, learning_needed: bool = True, testing_needed: bool = True):\r\n        if learning_needed:\r\n            self.learning()\r\n        else:\r\n            self.load_tables(progon_number)\r\n        if testing_needed:\r\n            self.checking_learning()\r\n\r\n\r\nif __name__ == \"__main__\":\r\n    Main_Frame().main_frame()\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/main.py b/main.py
+--- a/main.py	
++++ b/main.py	
+@@ -5,116 +5,209 @@
+ import os
+ import json
+ 
+-class Main_Frame():
+ 
+-    def venv_init(self, patron_num, altruist_num, render_mode):
++class MainFrame:
++    def initialize_environment(self, patron_num: int, altruist_num: int, render_mode: str) -> None:
++        """
++        Инициализирует среду и добавляет агентов.
++
++        Args:
++            patron_num (int): Количество агентов патронов.
++            altruist_num (int): Количество агентов альтруистов.
++            render_mode (str): Режим отображения среды.
++        """
+         self.env = WorldEnv(render_mode=render_mode)
+         self.add_agents(patron_num, altruist_num)
+ 
+-    def add_agents(self, patron_num, altruist_num):
+-        for counter in range(patron_num):
+-            self.env.agents[f"patron_{counter}"] = QLearningAgent(self.env.action_space())
+-        for counter in range(altruist_num):
+-            self.env.agents[f"altruist_{counter}"] = Altruistic_agent(self.env.action_space())
++    def add_agents(self, patron_num: int, altruist_num: int) -> None:
++        """
++        Добавляет агентов патронов и альтруистов в среду.
++
++        Args:
++            patron_num (int): Количество агентов патронов.
++            altruist_num (int): Количество агентов альтруистов.
++        """
++        for i in range(patron_num):
++            self.env.agents[f"patron_{i}"] = QLearningAgent(self.env.action_space())
++        for i in range(altruist_num):
++            self.env.agents[f"altruist_{i}"] = Altruistic_agent(self.env.action_space())
+ 
+-    def learning(self, patron_num: int = 1, altruist_num: int = 1, render_mode: str = "rgb_array", num_episodes: int = 1000):
+-        self.venv_init(patron_num, altruist_num, render_mode)
++    def run_training(self, patron_num: int = 1, altruist_num: int = 1, render_mode: str = "rgb_array",
++                     num_episodes: int = 1000) -> None:
++        """
++        Запускает процесс обучения агентов.
++
++        Args:
++            patron_num (int): Количество агентов патронов.
++            altruist_num (int): Количество агентов альтруистов.
++            render_mode (str): Режим отображения среды.
++            num_episodes (int): Количество эпизодов для обучения.
++        """
++        self.initialize_environment(patron_num, altruist_num, render_mode)
+         rewards = []
+         for episode in range(num_episodes):
+-            total_reward, steps = self.progon(learning_flag=True)
++            total_reward, steps = self.run_episode(learning_flag=True)
+             rewards.append(steps)
+             print(f"Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
+-        self.cache_tables()
+-        self.build_plot(rewards)
+-        print("Episode finished!")
++        self.cache_q_tables()
++        self.plot_learning_progress(rewards)
++        print("Training finished!")
+         self.env.close()
+ 
+-    def checking_learning(self, patron_num: int = 1, altruist_num: int = 1, render_mode: str = "human", num_episodes: int = 10):
+-        # Устанавливаем epsilon на минимальное значение и переводим в режим наблюдения
+-        self.venv_init(patron_num, altruist_num, render_mode)
+-        for agent_id, agent_instance in self.env.agents.items():
+-            agent_instance.epsilon = 0.01
+-        # Запускаем агента для тестирования его поведения
++    def run_testing(self, patron_num: int = 1, altruist_num: int = 1, render_mode: str = "human",
++                    num_episodes: int = 10) -> None:
++        """
++        Тестирование агентов после обучения.
++
++        Args:
++            patron_num (int): Количество агентов патронов.
++            altruist_num (int): Количество агентов альтруистов.
++            render_mode (str): Режим отображения среды.
++            num_episodes (int): Количество эпизодов для тестирования.
++        """
++        self.initialize_environment(patron_num, altruist_num, render_mode)
++        for agent_id, agent in self.env.agents.items():
++            agent.epsilon = 0.01  # Минимизируем случайные действия
+         for episode in range(num_episodes):
+-            total_reward, steps = self.progon(learning_flag=False)
++            total_reward, steps = self.run_episode(learning_flag=False)
+             print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
+         self.env.close()
+ 
+-    def progon(self, learning_flag: bool, steps: int = 0, total_reward: int = 0, action: dict = {}, possible_actions: int = 300, done = False):
++    def run_episode(self, learning_flag: bool) -> tuple[int, int]:
++        """
++        Выполняет один эпизод взаимодействия агентов со средой.
++
++        Args:
++            learning_flag (bool): Определяет, происходит ли обучение агентов в этом эпизоде.
++
++        Returns:
++            total_reward (int): Общая сумма вознаграждений.
++            steps (int): Количество шагов.
++        """
++        total_reward, steps = 0, 0
++        action = {}
++        max_steps = 300
+         state, _ = self.env.reset()
+-        state_tupled = tuple(state.values())
+-        while possible_actions>0 and not done:
++        state_tuple = tuple(state.values())
++        done = False
++
++        while max_steps > 0 and not done:
+             steps += 1
+             for agent_id, agent_instance in self.env.agents.items():
+-                old_agent_location = agent_instance.location
+-                action[agent_id] = agent_instance.select_action(state_tupled)
++                action[agent_id] = agent_instance.select_action(state_tuple)
+             next_state, reward, done, _, _ = self.env.step(action)
+             if learning_flag:
+-                for agent_id, agent_instance in self.env.agents.items():
+-                    agent_instance.update_q(state[agent_id], action[agent_id], reward, next_state[agent_id])
+-                    agent_instance.decay_epsilon()
++                self.update_agents(state, action, int(reward), next_state)
+             state = next_state
+-            total_reward += reward
+-            possible_actions -= 1
++            total_reward += int(reward)  # Приводим вознаграждение к int
++            max_steps -= 1
+             self.env.render()
++
+         return total_reward, steps
+ 
+-    def cache_tables(self, cache_dir: str = "cache", try_dir_base: str = "progon_"):
++    def update_agents(self, state: dict, action: dict, reward: int, next_state: dict) -> None:
++        """
++        Обновляет Q-таблицы агентов и уменьшает их epsilon.
++
++        Args:
++            state (dict): Текущее состояние среды.
++            action (dict): Действия агентов.
++            reward (int): Награда за действие.
++            next_state (dict): Следующее состояние среды.
++        """
++        for agent_id, agent_instance in self.env.agents.items():
++            agent_instance.update_q(state[agent_id], action[agent_id], reward, next_state[agent_id])
++            agent_instance.decay_epsilon()
++
++    def cache_q_tables(self, cache_dir: str = "cache", try_dir_base: str = "run_") -> None:
++        """
++        Сохраняет Q-таблицы агентов на диск.
++
++        Args:
++            cache_dir (str): Папка для сохранения Q-таблиц.
++            try_dir_base (str): Префикс для имени папки сессии.
++        """
+         if not os.path.exists(cache_dir):
+             os.makedirs(cache_dir)
+-        existing_folders = [f for f in os.listdir(cache_dir) if f.startswith(try_dir_base) and os.path.isdir(os.path.join(cache_dir, f))]
+-        if existing_folders:
+-            max_i = max([int(f.split('_')[1]) for f in existing_folders])
+-        else:
+-            max_i = 0
++
++        existing_folders = [f for f in os.listdir(cache_dir) if
++                            f.startswith(try_dir_base) and os.path.isdir(os.path.join(cache_dir, f))]
++        max_i = max([int(f.split('_')[1]) for f in existing_folders], default=0)
++
+         new_folder = os.path.join(cache_dir, f"{try_dir_base}{max_i + 1}")
+         os.makedirs(new_folder)
++
+         for agent_id, agent_instance in self.env.agents.items():
+             table_agent_path = os.path.join(new_folder, f"table_{agent_id}.json")
+             table = self.serialize_keys(agent_instance.q_table)
+-            print(agent_id, table)
+             with open(table_agent_path, 'w') as f1:
+                 json.dump(table, f1)
+         print(f"Q-таблицы сохранены в {new_folder}")
+-        
+-    def serialize_keys(self, table):
+-        new_table = {}
+-        for key, value in table.items():
+-            str_key = str(key)
+-            new_table[str_key] = value
+-        return new_table
++
++    def load_q_tables(self, run_number: int, cache_dir: str = "cache", try_dir_base: str = "run_") -> None:
++        """
++        Загружает сохранённые Q-таблицы агентов с диска.
+ 
+-    def load_tables(self, progon_number: int, cache_dir: str = "cache", try_dir_base: str = "progon_"):
+-        progon_folder = os.path.join(cache_dir, f"{try_dir_base}{progon_number}")
+-        if not os.path.exists(progon_folder):
+-            raise ValueError(f"Попытка {progon_number} не существует.")
+-        table_patron_path = os.path.join(progon_folder, "table_patron.json")
+-        table_altruist_path = os.path.join(progon_folder, "table_altruist.json")
+-        if not os.path.exists(table_patron_path) or not os.path.exists(table_altruist_path):
+-            raise ValueError(f"Файлы table_1.json и/или table_2.json не найдены в папке {progon_folder}.")
+-        # Загружаем table_1
+-        with open(table_patron_path, 'r') as f1:
+-            self.agent_patron.q_table = json.load(f1)
+-        # Загружаем table_2
+-        with open(table_altruist_path, 'r') as f2:
+-            self.agent_altruist.q_table = json.load(f2)
+-        print(f"Таблицы успешно загружены из {progon_folder}")
++        Args:
++            run_number (int): Номер сессии, из которой нужно загрузить Q-таблицы.
++            cache_dir (str): Папка для сохранения Q-таблиц.
++            try_dir_base (str): Префикс для имени папки сессии.
++        """
++        run_folder = os.path.join(cache_dir, f"{try_dir_base}{run_number}")
++        if not os.path.exists(run_folder):
++            raise ValueError(f"Сессия {run_number} не существует.")
+ 
+-    def build_plot(self, rewards: List):
++        for agent_id in self.env.agents.keys():
++            table_path = os.path.join(run_folder, f"table_{agent_id}.json")
++            if not os.path.exists(table_path):
++                raise ValueError(f"Файл {table_path} не найден.")
++
++            with open(table_path, 'r') as f:
++                self.env.agents[agent_id].q_table = json.load(f)
++
++        print(f"Q-таблицы загружены из {run_folder}")
++
++    def serialize_keys(self, table: dict) -> dict:
++        """
++        Преобразует ключи Q-таблицы в строки для сохранения в JSON.
++
++        Args:
++            table (dict): Q-таблица агента.
++
++        Returns:
++            dict: Q-таблица с преобразованными ключами.
++        """
++        return {str(key): value for key, value in table.items()}
++
++    def plot_learning_progress(self, rewards: List[int]) -> None:
++        """
++        Строит график прогресса обучения агентов.
++
++        Args:
++            rewards (List[int]): Список шагов для каждого эпизода.
++        """
+         plt.plot(rewards)
+         plt.xlabel('Episode')
+         plt.ylabel('Total Steps')
+         plt.title('Learning Progress')
+         plt.show()
+ 
+-    def main_frame(self, progon_number: Optional[int] = None, learning_needed: bool = True, testing_needed: bool = True):
++    def run(self, run_number: Optional[int] = None, learning_needed: bool = True, testing_needed: bool = True) -> None:
++        """
++        Запускает процесс обучения и/или тестирования агентов.
++
++        Args:
++            run_number (Optional[int]): Номер сессии для загрузки сохранённых Q-таблиц.
++            learning_needed (bool): Нужно ли запускать обучение.
++            testing_needed (bool): Нужно ли запускать тестирование.
++        """
+         if learning_needed:
+-            self.learning()
++            self.run_training()
+         else:
+-            self.load_tables(progon_number)
++            self.load_q_tables(run_number)
+         if testing_needed:
+-            self.checking_learning()
++            self.run_testing()
+ 
+ 
+ if __name__ == "__main__":
+-    Main_Frame().main_frame()
++    MainFrame().run()
+Index: agents.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import numpy as np\r\nfrom typing import Tuple\r\n\r\nclass BaseAgent:\r\n    def __init__(self, agent_name: str = \"\", agent_type: str = \"\", location: Tuple = (), key: bool = False):\r\n        self.agent_name = agent_name\r\n        self.agent_type = agent_type\r\n        self.location = location\r\n        self.key = key\r\n\r\nclass QLearningAgent(BaseAgent):\r\n    def __init__(self, action_space, alpha=0.1, gamma=0.99, epsilon=1.0, epsilon_decay=0.995, min_epsilon=0.01, **kwargs):\r\n        super().__init__(**kwargs)\r\n        self.q_table = {}\r\n        self.action_space = action_space\r\n        self.alpha = alpha  # Learning rate\r\n        self.gamma = gamma  # Discount factor\r\n        self.epsilon = epsilon  # Exploration rate\r\n        self.epsilon_decay = epsilon_decay\r\n        self.min_epsilon = min_epsilon\r\n\r\n    def get_q(self, state, action):\r\n        return self.q_table.get((state, action), 0.0)\r\n\r\n    def update_q(self, state, action, reward, next_state):\r\n        all_actions = range(self.action_space.n)\r\n        best_next_action = max(all_actions, key=lambda a: self.get_q(next_state, a))\r\n        td_target = reward + self.gamma * self.get_q(next_state, best_next_action)\r\n        td_error = td_target - self.get_q(state, action)\r\n        new_q = self.get_q(state, action) + self.alpha * td_error\r\n        self.q_table[(state, action)] = new_q\r\n\r\n    def select_action(self, state):\r\n        if np.random.rand() < self.epsilon:\r\n            return self.action_space.sample()  # Exploration\r\n        else:\r\n            all_actions = range(self.action_space.n)\r\n            return max(all_actions, key=lambda a: self.get_q(state, a))  # Exploitation\r\n\r\n    def decay_epsilon(self):\r\n        self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)\r\n\r\n\r\nclass Altruistic_agent(BaseAgent):\r\n    def __init__(self, action_space, alpha=0.1, gamma=0.99, epsilon=1.0, epsilon_decay=0.995, min_epsilon=0.01, **kwargs):\r\n        super().__init__(**kwargs)\r\n        self.q_table = {}\r\n        self.action_space = action_space\r\n        self.alpha = alpha  # Learning rate\r\n        self.gamma = gamma  # Discount factor\r\n        self.epsilon = epsilon  # Exploration rate\r\n        self.epsilon_decay = epsilon_decay\r\n        self.min_epsilon = min_epsilon\r\n        self.key = False\r\n\r\n    def update_q(self, state, action, reward, next_state):\r\n        pass\r\n\r\n    def get_q(self, state, action):\r\n        return self.q_table.get((state, action), 0.0)\r\n\r\n    def update(self, state, action, reward, next_state):\r\n        pass\r\n\r\n    def select_action(self, state):\r\n        return self.action_space.sample()  # Exploration\r\n\r\n    def decay_epsilon(self):\r\n        self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)\r\n\r\n\r\n\r\n# Создаем окружение\r\n# env = gym.make('gym_examples/GridWorld-v0', render_mode='rgb_array')\r\n# agent = QLearningAgent(env.action_space)\r\n\r\n# num_episodes = 1000\r\n# rewards = []\r\n# for episode in range(num_episodes):\r\n#     state, _ = env.reset()\r\n#     state = tuple(state['agent']) + tuple(state['target'])\r\n#     total_reward = 0\r\n#     steps = 0\r\n#     done = False\r\n    \r\n#     while not done:\r\n#         steps += 1\r\n#         action = agent.select_action(state)\r\n#         next_state, reward, done, _, _ = env.step(action)\r\n#         next_state = tuple(next_state['agent']) + tuple(next_state['target'])\r\n#         agent.update_q(state, action, reward, next_state)\r\n#         state = next_state\r\n#         total_reward += reward\r\n#         env.render()\r\n\r\n#     agent.decay_epsilon()\r\n#     print(f\"Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}\")\r\n#     rewards.append(steps)\r\n\r\n# plt.plot(rewards)\r\n# plt.xlabel('Episode')\r\n# plt.ylabel('Total Steps')\r\n# plt.title('Learning Progress')\r\n# plt.show()\r\n# env.close()\r\n\r\n# # Устанавливаем epsilon на минимальное значение и переводим в режим наблюдения\r\n# agent.epsilon = 0.01\r\n# env = gym.make('gym_examples/GridWorld-v0', render_mode='human')\r\n\r\n# # Запускаем агента для тестирования его поведения\r\n# num_test_episodes = 10\r\n# for episode in range(num_test_episodes):\r\n#     state, _ = env.reset()\r\n#     state = tuple(state['agent']) + tuple(state['target'])\r\n#     total_reward = 0\r\n#     steps = 0\r\n#     done = False\r\n    \r\n#     while not done:\r\n#         steps += 1\r\n#         action = agent.select_action(state)\r\n#         next_state, reward, done, _, _ = env.step(action)\r\n#         next_state = tuple(next_state['agent']) + tuple(next_state['target'])\r\n#         state = next_state\r\n#         total_reward += reward\r\n#         env.render()\r\n\r\n#     print(f\"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}\")\r\n\r\n# env.close()\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/agents.py b/agents.py
+--- a/agents.py	
++++ b/agents.py	
+@@ -70,62 +70,3 @@
+ 
+ 
+ 
+-# Создаем окружение
+-# env = gym.make('gym_examples/GridWorld-v0', render_mode='rgb_array')
+-# agent = QLearningAgent(env.action_space)
+-
+-# num_episodes = 1000
+-# rewards = []
+-# for episode in range(num_episodes):
+-#     state, _ = env.reset()
+-#     state = tuple(state['agent']) + tuple(state['target'])
+-#     total_reward = 0
+-#     steps = 0
+-#     done = False
+-    
+-#     while not done:
+-#         steps += 1
+-#         action = agent.select_action(state)
+-#         next_state, reward, done, _, _ = env.step(action)
+-#         next_state = tuple(next_state['agent']) + tuple(next_state['target'])
+-#         agent.update_q(state, action, reward, next_state)
+-#         state = next_state
+-#         total_reward += reward
+-#         env.render()
+-
+-#     agent.decay_epsilon()
+-#     print(f"Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
+-#     rewards.append(steps)
+-
+-# plt.plot(rewards)
+-# plt.xlabel('Episode')
+-# plt.ylabel('Total Steps')
+-# plt.title('Learning Progress')
+-# plt.show()
+-# env.close()
+-
+-# # Устанавливаем epsilon на минимальное значение и переводим в режим наблюдения
+-# agent.epsilon = 0.01
+-# env = gym.make('gym_examples/GridWorld-v0', render_mode='human')
+-
+-# # Запускаем агента для тестирования его поведения
+-# num_test_episodes = 10
+-# for episode in range(num_test_episodes):
+-#     state, _ = env.reset()
+-#     state = tuple(state['agent']) + tuple(state['target'])
+-#     total_reward = 0
+-#     steps = 0
+-#     done = False
+-    
+-#     while not done:
+-#         steps += 1
+-#         action = agent.select_action(state)
+-#         next_state, reward, done, _, _ = env.step(action)
+-#         next_state = tuple(next_state['agent']) + tuple(next_state['target'])
+-#         state = next_state
+-#         total_reward += reward
+-#         env.render()
+-
+-#     print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
+-
+-# env.close()
