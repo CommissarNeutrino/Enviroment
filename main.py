@@ -1,4 +1,4 @@
-from agents import QLearningAgent, Altruistic_agent  # берем классы агентов из соседнего файла
+from agents import Patron, Altruist  # берем классы агентов из соседнего файла
 from env import WorldEnv  # берем класс среды из соседнего файла
 #  import matplotlib.pyplot as plt # ЗАЧЕМ? ПРОКЛЯТО? Проверить
 from typing import Optional  # раньше тут вызывался еще и List
@@ -72,9 +72,9 @@ class SimulationManager:
     def add_agents(self, patron_num, altruist_num):
         # переписать без циклового вызова методов add_agents и env
         for counter in range(patron_num):
-            self.env.agents[f"patron_{counter}"] = QLearningAgent(self.env.action_space())
+            self.env.agents[f"patron_{counter}"] = Patron(self.env.action_space())
         for counter in range(altruist_num):
-            self.env.agents[f"altruist_{counter}"] = Altruistic_agent(self.env.action_space())
+            self.env.agents[f"altruist_{counter}"] = Altruist(self.env.action_space())
 
     def show_trained_behavior(
             self,

@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Tuple
 
+
 class BaseAgent:
     def __init__(self, agent_name: str = "", agent_type: str = "", location: Tuple = (), key: bool = False):
         self.agent_name = agent_name
@@ -8,8 +9,18 @@ class BaseAgent:
         self.location = location
         self.key = key
 
-class QLearningAgent(BaseAgent):
-    def __init__(self, action_space, alpha=0.1, gamma=0.99, epsilon=1.0, epsilon_decay=0.995, min_epsilon=0.01, **kwargs):
+
+class Patron(BaseAgent):
+    def __init__(
+            self,
+            action_space,
+            alpha=0.1,
+            gamma=0.99,
+            epsilon=1.0,
+            epsilon_decay=0.995,
+            min_epsilon=0.01,
+            **kwargs
+    ):
         super().__init__(**kwargs)
         self.q_table = {}
         self.action_space = action_space
@@ -41,8 +52,17 @@ class QLearningAgent(BaseAgent):
         self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
 
 
-class Altruistic_agent(BaseAgent):
-    def __init__(self, action_space, alpha=0.1, gamma=0.99, epsilon=1.0, epsilon_decay=0.995, min_epsilon=0.01, **kwargs):
+class Altruist(BaseAgent):
+    def __init__(
+            self,
+            action_space,
+            alpha=0.1,
+            gamma=0.99,
+            epsilon=1.0,
+            epsilon_decay=0.995,
+            min_epsilon=0.01,
+            **kwargs
+    ):
         super().__init__(**kwargs)
         self.q_table = {}
         self.action_space = action_space
@@ -67,7 +87,6 @@ class Altruistic_agent(BaseAgent):
 
     def decay_epsilon(self):
         self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
-
 
 
 # Создаем окружение
