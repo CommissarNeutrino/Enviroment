@@ -318,4 +318,4 @@ class WorldEnv(gym.Env):
     # Пространство действий для каждого агента
     @functools.lru_cache(maxsize=None)
     def action_space(self):
-        return spaces.Discrete(4)
+        return spaces.Discrete(5)
