@@ -1,101 +1,129 @@
 import pygame
 
+# Глобальные переменные для путей к изображениям
+GOAL_IMAGE_PATH = 'img/goal.png'
+BACKGROUND_IMAGE_PATH = 'img/background.png'
+PATRON_IMAGE_PATH = 'img/patron.png'
+ALTRUIST_IMAGE_PATH = 'img/altruist.png'
+NO_IMAGE = 'img/no_image.png'
 
-def scale_image_with_aspect_ratio(image, target_size):
-    """
-    Масштабирует изображение с сохранением пропорций.
-
-    :param image: Исходное изображение.
-    :param target_size: Целевой размер (ширина, высота).
-    :return: Масштабированное изображение с сохранением пропорций.
-    """
-    original_width, original_height = image.get_size()
-    target_width, target_height = target_size
-
-    aspect_ratio = original_width / original_height
-
-    # Вычисляем новый размер с сохранением пропорций
-    if aspect_ratio > 1:
-        new_width = target_width
-        new_height = int(target_width / aspect_ratio)
-    else:
-        new_height = target_height
-        new_width = int(target_height * aspect_ratio)
-
-    return pygame.transform.scale(image, (new_width, new_height))
+CELL_SIZE = 50
+FPS = 60
 
 
-class ImageLoader:
-    """ Класс для загрузки и масштабирования изображений """
-    def __init__(self, default_size):
-        self.default_size = default_size  # Размер по умолчанию, например, размер клетки
+def scale_image(image, target_size=(CELL_SIZE, CELL_SIZE), keep_aspect_ratio=True):
+    target_width = target_size[0]
+    target_height = target_size[1]
 
-    def load_and_scale_image(self, image_path, target_size=None, keep_aspect_ratio=True):
-        """
-        Универсальный метод для загрузки и масштабирования изображения.
+    if keep_aspect_ratio:
+        # Масштабирует изображение с сохранением пропорций.
+        original_width, original_height = image.get_size()
+        aspect_ratio = original_width / original_height
 
-        :param image_path: Путь к изображению.
-        :param target_size: Целевой размер изображения (ширина, высота). Если не указан, используется default_size.
-        :param keep_aspect_ratio: Флаг для сохранения пропорций изображения.
-        :return: Масштабированное изображение.
-        """
-        image = pygame.image.load(image_path)
-
-        if target_size is None:
-            target_size = (self.default_size, self.default_size)
-
-        if keep_aspect_ratio:
-            image = scale_image_with_aspect_ratio(image, target_size)
+        # Вычисляем новый размер с сохранением пропорций
+        if aspect_ratio > 1:
+            target_height = int(target_width / aspect_ratio)
         else:
-            image = pygame.transform.scale(image, target_size)
+            target_width = int(target_height * aspect_ratio)
 
-        return image
+    return pygame.transform.scale(image, (target_width, target_height))
 
 
 class GridRenderer:
-    """ Класс про визуализацию всего (славься Pygame).В нем есть:"""
-    def __init__(self, grid_width, grid_height, goal_image_path, agents_info, cell_size=100, background_image_path='background.png'):
+    """ Класс визуализации, включает управление размерами окна и FPS """
+    def __init__(self, grid_width, grid_height):
         self.grid_width = grid_width
         self.grid_height = grid_height
-        self.cell_size = cell_size
 
-        # Инициализация ImageLoader с размером клетки по умолчанию
-        image_loader = ImageLoader(self.cell_size)
+        self.window_size_x = grid_width * CELL_SIZE
+        self.window_size_y = grid_height * CELL_SIZE
 
-        # Загрузка изображения цели
-        self.goal_image = image_loader.load_and_scale_image(goal_image_path)
+        self.cell_size = min(self.window_size_x // self.grid_width, self.window_size_y // self.grid_height)
 
-        # Загрузка изображений агентов с сохранением пропорций
-        self.agent_images = {
-            agent_type: image_loader.load_and_scale_image(image_path)
-            for agent_type, image_path in agents_info.items()
-        }
-
-        # Инициализация экрана
-        screen_size = (self.grid_width * self.cell_size, self.grid_height * self.cell_size)
+        # Инициализация PyGame и экрана
+        screen_size = (self.window_size_x, self.window_size_y)
         pygame.init()
-        self.screen = pygame.display.set_mode(screen_size)
+        self.screen = pygame.display.set_mode(screen_size, pygame.RESIZABLE)
         self.clock = pygame.time.Clock()
 
-        # Загрузка фонового изображения без сохранения пропорций (чтобы точно подогнать под экран)
-        self.background_image = image_loader.load_and_scale_image(
-            background_image_path, target_size=screen_size, keep_aspect_ratio=False
+        # Загружаем и сохраняем оригинальные изображения
+        self.original_background_image = scale_image(
+            pygame.image.load(BACKGROUND_IMAGE_PATH),
+            screen_size
         )
+        self.background_image = self.original_background_image  # Изначально равен оригиналу
 
-        # Предварительно отрисованная сетка
+        self.original_goal_image = scale_image(
+            pygame.image.load(GOAL_IMAGE_PATH)
+        )
+        self.goal_image = self.original_goal_image
+
+        # Сохраняем оригиналы изображений агентов
+        self.original_agent_images = {
+            "Patron": scale_image(pygame.image.load(PATRON_IMAGE_PATH), keep_aspect_ratio=True),
+            "Altruist": scale_image(pygame.image.load(ALTRUIST_IMAGE_PATH), keep_aspect_ratio=True),
+            "Default": scale_image(pygame.image.load(NO_IMAGE), keep_aspect_ratio=True)
+        }
+        self.agent_images = self.original_agent_images
+        # Масштабируем изображения под размер клетки
+
+        self.initiate_scaling()
+
+        # Создаем предварительно отрисованную сетку
         self.grid_surface = self.create_grid_surface()
+        self.fps = FPS
 
     def create_grid_surface(self):
-        """ Создаём поверхность с отрисованной сеткой для последующего использования """
-        grid_surface = pygame.Surface((self.grid_width * self.cell_size, self.grid_height * self.cell_size), pygame.SRCALPHA)
+        """ Создаем поверхность с сеткой """
+        grid_surface = pygame.Surface(
+            (self.grid_width * self.cell_size, self.grid_height * self.cell_size),
+            pygame.SRCALPHA
+        )
         for x in range(0, self.grid_width * self.cell_size, self.cell_size):
             for y in range(0, self.grid_height * self.cell_size, self.cell_size):
                 rect = pygame.Rect(x, y, self.cell_size, self.cell_size)
-                pygame.draw.rect(grid_surface, (0, 0, 0, 50), rect, 1)  # Черная прозрачная сетка
+                pygame.draw.rect(grid_surface, (0, 0, 0, 50), rect, 1)  # Прозрачная черная сетка
         return grid_surface
 
-    def render(self, agents, goal_location, delay):
+    def initiate_scaling(self):
+        """ Масштабируем изображения агентов и цели в зависимости от текущего размера клетки """
+
+        self.background_image = scale_image(
+            self.original_background_image,
+            (self.window_size_x, self.window_size_y),
+            True
+        )
+
+        # Масштабируем изображение цели
+        self.goal_image = scale_image(self.original_goal_image, (self.cell_size, self.cell_size))
+
+        # Масштабируем изображения агентов
+        self.agent_images = {
+            agent_type: scale_image(original_image, (self.cell_size, self.cell_size))
+            for agent_type, original_image in self.original_agent_images.items()
+        }
+
+    def handle_resize_event(self):
+        """ Обрабатываем изменение размеров окна """
+        for event in pygame.event.get():
+            if event.type == pygame.VIDEORESIZE:
+                self.window_size_x, self.window_size_y = event.w, event.h
+                self.cell_size = min(self.window_size_x // self.grid_width, self.window_size_y // self.grid_height)
+
+                # Обновляем размеры окна и масштабируем изображения
+                screen_size = (self.window_size_x, self.window_size_y)
+                self.screen = pygame.display.set_mode(screen_size, pygame.RESIZABLE)
+
+                # Масштабируем изображения агентов и цели
+                self.initiate_scaling()
+
+                # Пересоздаем сетку с новым размером клеток
+                self.grid_surface = self.create_grid_surface()
+
+    def render(self, agents, goal_location):
         """ Отрисовка сетки, агентов и цели на экране """
+        self.handle_resize_event()
+
         # Отрисовка фонового изображения
         self.screen.blit(self.background_image, (0, 0))
 
@@ -110,19 +138,24 @@ class GridRenderer:
         )
         self.screen.blit(self.goal_image, goal_rect)
 
-        # Рендеринг агентов с их изображениями
+        # Рендеринг агентов
         for agent in agents:
             agent_rect = pygame.Rect(
                 agent.location[1] * self.cell_size,
                 agent.location[0] * self.cell_size,
                 self.cell_size, self.cell_size
             )
-            agent_image = self.agent_images["patron"]
+            agent.type = agent.__class__.__name__
+            agent_image = self.agent_images.get(agent.type, self.agent_images["Default"])
             self.screen.blit(agent_image, agent_rect)
 
-        pygame.display.flip()  # Обновляем экран
-        pygame.time.wait(delay)  # Добавляем задержку для замедления движения
+        # Обновляем экран
+        pygame.display.flip()
+
+        # Задержка для поддержания заданного FPS
+        self.clock.tick(self.fps)
 
     @staticmethod
     def close():
+        """ Закрываем окно и выходим из PyGame """
         pygame.quit()

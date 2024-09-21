@@ -99,7 +99,7 @@ class SimulationManager:
             steps: int = 0,
             total_reward: int = 0,
             action: dict = {},
-            possible_actions: int = 300,
+            possible_actions: int = 800,
             done=False):
         state, _ = self.env.reset()
         state_tupled = tuple(state.values())

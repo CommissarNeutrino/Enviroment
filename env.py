@@ -6,14 +6,6 @@ import numpy as np
 from visualization import GridRenderer  # Импорт классов для визуализации
 import functools
 
-# Глобальные переменные для путей к изображениям
-GOAL_IMAGE_PATH = 'goal.png'
-BACKGROUND_IMAGE_PATH = 'background.png'
-AGENTS_IMAGE_PATHS = {
-    'patron': 'patron.png',
-    'altruist': 'altruist.png',
-}
-
 
 def _get_info():
     # Возвращаем дополнительную информацию, если необходимо
@@ -39,12 +31,8 @@ class WorldEnv(gym.Env):
         # Инициализируем визуализатор только если render_mode задан
         if self.render_mode is not None:
             self.renderer = GridRenderer(
-                grid_width=self.size_x,
-                grid_height=self.size_y,
-                goal_image_path=GOAL_IMAGE_PATH,
-                agents_info=AGENTS_IMAGE_PATHS,
-                cell_size=100,
-                background_image_path=BACKGROUND_IMAGE_PATH
+                grid_width=20,
+                grid_height=10
             )
 
         self.create_obstacles()
@@ -103,7 +91,8 @@ class WorldEnv(gym.Env):
     def render(self):
         if self.render_mode == "human" or self.render_mode == "rgb_array":
             # Отрисовываем только при вызове этого метода
-            self.renderer.render(self.agents.values(), self._target_location, delay=100)
+            # print(self.agents)
+            self.renderer.render(self.agents.values(), self._target_location)
 
     def close(self):
         if self.render_mode is not None:
