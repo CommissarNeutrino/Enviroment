@@ -40,6 +40,7 @@ class Patron(BaseAgent):
         td_error = td_target - self.get_q(state, action)
         new_q = self.get_q(state, action) + self.alpha * td_error
         self.q_table[(state, action)] = new_q
+        self.decay_epsilon()
 
     def select_action(self, state):
         if np.random.rand() < self.epsilon:
@@ -73,14 +74,11 @@ class Altruist(BaseAgent):
         self.min_epsilon = min_epsilon
         self.key = False
 
-    def update_q(self, state, action, reward, next_state):
-        pass
-
     def get_q(self, state, action):
         return self.q_table.get((state, action), 0.0)
 
-    def update(self, state, action, reward, next_state):
-        pass
+    def update_q(self, state, action, reward, next_state):
+        self.decay_epsilon()
 
     def select_action(self, state):
         return self.action_space.sample()  # Exploration
