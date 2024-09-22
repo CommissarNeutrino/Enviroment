@@ -6,6 +6,7 @@ import os  # для Q table нужно
 import json  # # для Q table нужно
 
 
+# Технический долг: посмотреть как реализуется action space в гимназиум по-нормальному?
 class SimulationManager:
     """
     Что делает этот класс:
@@ -73,6 +74,7 @@ class SimulationManager:
         # переписать без циклового вызова методов add_agents и env
         for counter in range(patron_num):
             self.env.agents[f"patron_{counter}"] = Patron(self.env.action_space())
+            print(self.env.action_space())
         for counter in range(altruist_num):
             self.env.agents[f"altruist_{counter}"] = Altruist(self.env.action_space())
 
