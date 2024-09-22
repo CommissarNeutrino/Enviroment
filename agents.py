@@ -7,7 +7,7 @@ class BaseAgent:
         self.agent_name = agent_name
         self.agent_type = agent_type
         self.location = location
-        self.key = key
+        self.start_zone = []
 
 
 class Patron(BaseAgent):

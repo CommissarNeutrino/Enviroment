@@ -19,11 +19,15 @@ class SimulationManager:
         Преобразует ключи Q-таблицы в строки для возможности сохранения в JSON
     """
 
+    def __init__(self, map_type):
+        self.map_type = map_type
+
     def run_simulation(
             self,
             progon_number: Optional[int] = None,
             learning_flag: bool = True,
-            testing_flag: bool = True
+            testing_flag: bool = True,
+            
     ):
         # ПЕРЕПИСАТЬ НА ЛОГИКУ по запуску скрипта для КОНЕЧНОГО ПОЛЬЗОВАТЕЛЯ ***
         # Управляет вызовом всех необходимых методов -
@@ -66,15 +70,17 @@ class SimulationManager:
         self.env.close()
 
     def init_environment_and_agents(self, patron_num, altruist_num, render_mode):
-        self.env = WorldEnv(render_mode=render_mode)
+        self.env = WorldEnv(render_mode=render_mode, map_type=self.map_type)
         self.add_agents(patron_num, altruist_num)
 
     def add_agents(self, patron_num, altruist_num):
         # переписать без циклового вызова методов add_agents и env
         for counter in range(patron_num):
             self.env.agents[f"patron_{counter}"] = Patron(self.env.action_space())
+            self.env.agents[f"patron_{counter}"].start_zone = self.env.patron_start_zone
         for counter in range(altruist_num):
             self.env.agents[f"altruist_{counter}"] = Altruist(self.env.action_space())
+            self.env.agents[f"altruist_{counter}"].start_zone = self.env.altruist_start_zone
 
     def show_trained_behavior(
             self,
@@ -199,5 +205,5 @@ if __name__ == "__main__":
         learning_needed = False
     if "no_test" in sys.argv:
         testing_needed = False
-    SimulationManager().run_simulation(learning_flag=learning_needed, testing_flag=testing_needed)
+    SimulationManager(map_type=1).run_simulation(learning_flag=learning_needed, testing_flag=testing_needed)
 
