@@ -6,6 +6,9 @@ BACKGROUND_IMAGE_PATH = 'img/background.png'
 PATRON_IMAGE_PATH = 'img/patron.png'
 ALTRUIST_IMAGE_PATH = 'img/altruist.png'
 NO_IMAGE = 'img/no_image.png'
+DOOR_IMAGE_PATH = 'img/door.png'
+BUTTON_IMAGE_PATH = 'img/button.png'
+OBSTACLE_IMAGE_PATH = 'img/obstacle.png'
 
 CELL_SIZE = 50
 FPS = 60
@@ -49,7 +52,7 @@ class GridRenderer:
         # Загружаем и сохраняем оригинальные изображения
         self.original_background_image = scale_image(
             pygame.image.load(BACKGROUND_IMAGE_PATH),
-            screen_size
+            screen_size, False
         )
         self.background_image = self.original_background_image  # Изначально равен оригиналу
 
@@ -65,6 +68,15 @@ class GridRenderer:
             "Default": scale_image(pygame.image.load(NO_IMAGE), keep_aspect_ratio=True)
         }
         self.agent_images = self.original_agent_images
+
+        self.original_object_images = {
+            "Door": scale_image(pygame.image.load(DOOR_IMAGE_PATH), keep_aspect_ratio=True),
+            "Button": scale_image(pygame.image.load(BUTTON_IMAGE_PATH), keep_aspect_ratio=True),
+            "Obstacle": scale_image(pygame.image.load(OBSTACLE_IMAGE_PATH), keep_aspect_ratio=True),
+        }
+
+        self.object_images = self.original_object_images
+
         # Масштабируем изображения под размер клетки
 
         self.initiate_scaling()
@@ -103,6 +115,11 @@ class GridRenderer:
             for agent_type, original_image in self.original_agent_images.items()
         }
 
+        self.object_images = {
+            object_type: scale_image(original_image, (self.cell_size, self.cell_size))
+            for object_type, original_image in self.original_object_images.items()
+        }
+
     def handle_resize_event(self):
         """ Обрабатываем изменение размеров окна """
         for event in pygame.event.get():
@@ -120,8 +137,8 @@ class GridRenderer:
                 # Пересоздаем сетку с новым размером клеток
                 self.grid_surface = self.create_grid_surface()
 
-    def render(self, agents, goal_location):
-        """ Отрисовка сетки, агентов и цели на экране """
+    def render(self, agents, goal_location, immutable_blocks, doors, buttons):
+        """ Отрисовка сетки, агентов, цели и объектов на экране """
         self.handle_resize_event()
 
         # Отрисовка фонового изображения
@@ -137,6 +154,36 @@ class GridRenderer:
             self.cell_size, self.cell_size
         )
         self.screen.blit(self.goal_image, goal_rect)
+
+        # Отрисовка препятствий (immutable_blocks)
+        for block in immutable_blocks:
+            block_rect = pygame.Rect(
+                block[0] * self.cell_size,
+                block[1] * self.cell_size,
+                self.cell_size, self.cell_size
+            )
+            obstacle_image = self.object_images.get("Obstacle")
+            self.screen.blit(obstacle_image, block_rect)
+
+        # Отрисовка дверей
+        for door in doors:
+            door_rect = pygame.Rect(
+                door[0] * self.cell_size,
+                door[1] * self.cell_size,
+                self.cell_size, self.cell_size
+            )
+            door_image = self.object_images.get("Door")
+            self.screen.blit(door_image, door_rect)
+
+        # Отрисовка кнопок
+        for button in buttons:
+            button_rect = pygame.Rect(
+                button[0] * self.cell_size,
+                button[1] * self.cell_size,
+                self.cell_size, self.cell_size
+            )
+            button_image = self.object_images.get("Button")
+            self.screen.blit(button_image, button_rect)
 
         # Рендеринг агентов
         for agent in agents:
@@ -154,6 +201,41 @@ class GridRenderer:
 
         # Задержка для поддержания заданного FPS
         self.clock.tick(self.fps)
+
+    # def render(self, agents, goal_location):
+    #     """ Отрисовка сетки, агентов и цели на экране """
+    #     self.handle_resize_event()
+    #
+    #     # Отрисовка фонового изображения
+    #     self.screen.blit(self.background_image, (0, 0))
+    #
+    #     # Используем предварительно созданную сетку
+    #     self.screen.blit(self.grid_surface, (0, 0))
+    #
+    #     # Отрисовка цели
+    #     goal_rect = pygame.Rect(
+    #         goal_location[0] * self.cell_size,
+    #         goal_location[1] * self.cell_size,
+    #         self.cell_size, self.cell_size
+    #     )
+    #     self.screen.blit(self.goal_image, goal_rect)
+    #
+    #     # Рендеринг агентов
+    #     for agent in agents:
+    #         agent_rect = pygame.Rect(
+    #             agent.location[0] * self.cell_size,
+    #             agent.location[1] * self.cell_size,
+    #             self.cell_size, self.cell_size
+    #         )
+    #         agent.type = agent.__class__.__name__
+    #         agent_image = self.agent_images.get(agent.type, self.agent_images["Default"])
+    #         self.screen.blit(agent_image, agent_rect)
+    #
+    #     # Обновляем экран
+    #     pygame.display.flip()
+    #
+    #     # Задержка для поддержания заданного FPS
+    #     self.clock.tick(self.fps)
 
     @staticmethod
     def close():

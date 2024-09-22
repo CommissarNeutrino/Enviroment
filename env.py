@@ -75,7 +75,7 @@ class WorldEnv(gym.Env):
         if self.render_mode == "human" or self.render_mode == "rgb_array":
             # Отрисовываем только при вызове этого метода
             # print(self.agents)
-            self.renderer.render(self.agents.values(), self.target_location)
+            self.renderer.render(self.agents.values(), self._target_location, self._immutable_blocks, self._doors, self._buttons)
 
     def close(self):
         if self.render_mode is not None:
