@@ -90,7 +90,7 @@ class WorldEnv(gym.Env):
         if self.render_mode == "human" or self.render_mode == "rgb_array":
             # Отрисовываем только при вызове этого метода
             # print(self.agents)
-            self.renderer.render(self.agents.values(), self._target_location)
+            self.renderer.render(self.agents.values(), self._target_location, self._immutable_blocks, self._doors, self._buttons)
 
     def close(self):
         if self.render_mode is not None:
@@ -150,6 +150,7 @@ class WorldEnv(gym.Env):
             obstacles.add((x, 0))
         self._immutable_blocks = obstacles
         self._doors = doors
+        self._buttons = {(0,2), (3,1)}
 
     @functools.lru_cache(maxsize=None)
     def observation_space(self):
