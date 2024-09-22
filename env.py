@@ -3,7 +3,6 @@ import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
 from visualization import GridRenderer  # Импорт классов для визуализации
-from map_creation import Map_Creation
 import functools
 
 
@@ -19,18 +18,20 @@ class WorldEnv(gym.Env):
         "name": "v0",
     }
 
-    def __init__(self, render_mode=None, map_type: int = 1, size_x: int = 5, size_y: int = 3):
-        self.size_x = size_x  # Размер сетки по X
-        self.size_y = size_y  # Размер сетки по Y
+    def __init__(self, size_x, size_y, target_location, immutable_blocks, doors, render_mode=None):
         self.render_mode = render_mode
         self.agents = {}
+        self.size_x = size_x
+        self.size_y = size_y
+        self.target_location = target_location
+        self.immutable_blocks = immutable_blocks
+        self.doors = doors
         # Инициализируем визуализатор только если render_mode задан
         if self.render_mode is not None:
             self.renderer = GridRenderer(
                 grid_width=self.size_x,
                 grid_height=self.size_y
             )
-        self.patron_start_zone, self.altruist_start_zone, self.target_location, self.immutable_blocks, self.doors = Map_Creation().select_scenary(map_type)
         if render_mode is not None and render_mode not in self.metadata.get("render_modes", []):
             raise ValueError(f"Invalid render_mode '{render_mode}'. Supported modes: {self.metadata['render_modes']}")
         self._action_to_direction = {
@@ -75,7 +76,8 @@ class WorldEnv(gym.Env):
         if self.render_mode == "human" or self.render_mode == "rgb_array":
             # Отрисовываем только при вызове этого метода
             # print(self.agents)
-            self.renderer.render(self.agents.values(), self._target_location, self._immutable_blocks, self._doors, self._buttons)
+            print(self.immutable_blocks)
+            self.renderer.render(self.agents.values(), self.target_location, self.immutable_blocks, self.doors)
 
     def close(self):
         if self.render_mode is not None:
@@ -112,11 +114,6 @@ class WorldEnv(gym.Env):
         if tuple(new_position) in new_positions:
             return False
         return True
-
-    def decision_key(self, agent_instance, new_position):
-        if np.array_equal(new_position, self.key_position):
-            agent_instance.key = True
-            self.key_position = np.array([-1, -1])
 
     def _is_immutable_block(self, position):
         return tuple(position) in self.immutable_blocks

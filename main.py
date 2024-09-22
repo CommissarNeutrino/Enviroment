@@ -4,7 +4,7 @@ from env import WorldEnv  # берем класс среды из соседне
 from typing import Optional  # раньше тут вызывался еще и List
 import os  # для Q table нужно
 import json  # # для Q table нужно
-
+from map_creation import Map_Creation
 
 class SimulationManager:
     """
@@ -55,7 +55,7 @@ class SimulationManager:
         rewards = []
 
         # Инициализация среды и агентов
-        self.init_environment_and_agents(patron_num, altruist_num, render_mode)
+        self.init_environment_and_agents(render_mode)
 
         # Запуск цикла обучения
         for episode in range(num_episodes):
@@ -69,18 +69,25 @@ class SimulationManager:
 
         self.env.close()
 
-    def init_environment_and_agents(self, patron_num, altruist_num, render_mode):
-        self.env = WorldEnv(render_mode=render_mode, map_type=self.map_type)
-        self.add_agents(patron_num, altruist_num)
+    def init_environment_and_agents(self, render_mode):
+        env_size_x, env_size_y, env_agent_patron_start_zone, env_agent_altruist_start_zone, env_target_location, env_walls_positions, env_doors_positions = Map_Creation().select_scenary(self.map_type)
+        self.env = WorldEnv(env_size_x,
+                            env_size_y,
+                            env_target_location,
+                            env_walls_positions,
+                            env_doors_positions,
+                            render_mode=render_mode
+                        )
+        self.add_agents(env_agent_patron_start_zone, env_agent_altruist_start_zone)
 
-    def add_agents(self, patron_num, altruist_num):
+    def add_agents(self, env_agent_patron_start_zone, env_agent_altruist_start_zone, patron_num=1, altruist_num=1):
         # переписать без циклового вызова методов add_agents и env
         for counter in range(patron_num):
             self.env.agents[f"patron_{counter}"] = Patron(self.env.action_space())
-            self.env.agents[f"patron_{counter}"].start_zone = self.env.patron_start_zone
+            self.env.agents[f"patron_{counter}"].start_zone = env_agent_patron_start_zone
         for counter in range(altruist_num):
             self.env.agents[f"altruist_{counter}"] = Altruist(self.env.action_space())
-            self.env.agents[f"altruist_{counter}"].start_zone = self.env.altruist_start_zone
+            self.env.agents[f"altruist_{counter}"].start_zone = env_agent_altruist_start_zone
 
     def show_trained_behavior(
             self,
@@ -90,7 +97,7 @@ class SimulationManager:
             num_episodes: int = 10
     ):
         # Устанавливаем epsilon на минимальное значение и переводим в режим наблюдения
-        self.init_environment_and_agents(patron_num, altruist_num, render_mode)
+        self.init_environment_and_agents(render_mode)
         for agent_id, agent_instance in self.env.agents.items():
             agent_instance.epsilon = 0.01
         # Запускаем агента для тестирования его поведения
@@ -205,5 +212,5 @@ if __name__ == "__main__":
         learning_needed = False
     if "no_test" in sys.argv:
         testing_needed = False
-    SimulationManager(map_type=1).run_simulation(learning_flag=learning_needed, testing_flag=testing_needed)
+    SimulationManager(map_type=3).run_simulation(learning_flag=learning_needed, testing_flag=testing_needed)
 
