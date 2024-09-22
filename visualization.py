@@ -132,8 +132,8 @@ class GridRenderer:
 
         # Отрисовка цели
         goal_rect = pygame.Rect(
-            goal_location[1] * self.cell_size,
             goal_location[0] * self.cell_size,
+            goal_location[1] * self.cell_size,
             self.cell_size, self.cell_size
         )
         self.screen.blit(self.goal_image, goal_rect)
@@ -141,8 +141,8 @@ class GridRenderer:
         # Рендеринг агентов
         for agent in agents:
             agent_rect = pygame.Rect(
-                agent.location[1] * self.cell_size,
                 agent.location[0] * self.cell_size,
+                agent.location[1] * self.cell_size,
                 self.cell_size, self.cell_size
             )
             agent.type = agent.__class__.__name__

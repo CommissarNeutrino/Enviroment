@@ -22,8 +22,6 @@ class WorldEnv(gym.Env):
     def __init__(self, render_mode=None, size_x=20, size_y=4, key_position=np.array([1, 1])):
         self.size_x = size_x  # Размер сетки по X
         self.size_y = size_y  # Размер сетки по Y
-        self.window_size_x = 1024  # Размер окна PyGame
-        self.window_size_y = 512  # Размер окна PyGame
 
         self.render_mode = render_mode
         self.agents = {}
@@ -31,8 +29,8 @@ class WorldEnv(gym.Env):
         # Инициализируем визуализатор только если render_mode задан
         if self.render_mode is not None:
             self.renderer = GridRenderer(
-                grid_width=20,
-                grid_height=10
+                grid_width=self.size_x,
+                grid_height=self.size_y
             )
 
         self.create_obstacles()
