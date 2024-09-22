@@ -7,6 +7,59 @@ from env import WorldEnv  # берем класс среды из соседне
 from config import num_episodes, patron_num, altruist_num
 from config import show_graph, cache_results
 
+#from collections import deque
+
+class BaseAgent:
+    def __init__(self):
+        pass 
+
+    def train(self):
+        pass
+    
+    def evaluate(self):
+        pass
+
+
+class AltruistQ(BaseAgent):
+    def __init__(self, q_table, time_horizon, decay_coefficient):
+        self.table_to_belong_q = q_table.copy()
+        self.states_of_env = {}            # { int: { "patron_position": tuple } }
+        self.current_time = 0
+        self.time_horizon = time_horizon
+        self.decay_coefficient = decay_coefficient
+        self.action_space = env.action_space
+
+    def select_action(self):
+        pass
+
+    def update(self, t):
+        score = 0
+        exp = 1
+        score_time = t
+        
+        if len(self.states_of_env) - t < time_horizon:
+            print("aaaaaaaaaaa")
+
+        reachable_tiles = set(self.states_of_env[t]["patron_position"])
+
+        while(score_time - t < self.time_horizon):
+            next_tiles = set()
+            for tile in reachable_tiles:
+                for next_tile in tile + :
+                    if ALLOWED-MOVE FROM tile TO next_tile ON board[score_time]:
+                    ADD next_tile TO next_tiles
+                 
+            score = score + exp * len(next_tiles)
+            score_time += 1
+            exp = exp * self.decay_coefficient
+            reachable_tiles = next_tiles
+
+        
+        
+
+
+
+
 class Training_Manager:
     """
     Что делает этот класс:
