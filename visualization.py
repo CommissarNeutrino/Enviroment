@@ -137,7 +137,7 @@ class GridRenderer:
                 # Пересоздаем сетку с новым размером клеток
                 self.grid_surface = self.create_grid_surface()
 
-    def render(self, agents, goal_location, immutable_blocks, doors, buttons):
+    def render(self, agents, goal_location, immutable_blocks, doors):
         """ Отрисовка сетки, агентов, цели и объектов на экране """
         self.handle_resize_event()
 
@@ -166,23 +166,20 @@ class GridRenderer:
             self.screen.blit(obstacle_image, block_rect)
 
         # Отрисовка дверей
-        for door in doors:
+        for door, button in doors.items():
             door_rect = pygame.Rect(
                 door[0] * self.cell_size,
                 door[1] * self.cell_size,
                 self.cell_size, self.cell_size
             )
-            door_image = self.object_images.get("Door")
-            self.screen.blit(door_image, door_rect)
-
-        # Отрисовка кнопок
-        for button in buttons:
             button_rect = pygame.Rect(
                 button[0] * self.cell_size,
                 button[1] * self.cell_size,
                 self.cell_size, self.cell_size
             )
+            door_image = self.object_images.get("Door")
             button_image = self.object_images.get("Button")
+            self.screen.blit(door_image, door_rect)
             self.screen.blit(button_image, button_rect)
 
         # Рендеринг агентов
