@@ -160,3 +160,4 @@ class WorldEnv(gym.Env):
     @functools.lru_cache(maxsize=None)
     def action_space(self):
         return spaces.Discrete(5)
+        return spaces.Discrete(5)
