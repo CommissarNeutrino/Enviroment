@@ -6,6 +6,9 @@ import os  # для Q table нужно
 import json  # # для Q table нужно
 from map_creation import Map_Creation
 from for_special_training.training import Training_Manager
+import os
+import pickle
+
 # Технический долг: посмотреть как реализуется action space в гимназиум по-нормальному?
 
 class SimulationManager:
@@ -24,7 +27,7 @@ class SimulationManager:
                         )
         agent_id = f"patron_0"
         self.env.agents[agent_id] = Patron(self.env.action_space())
-        self.env.agents[agent_id].start_zone = [(0, 0), (0, 1), (0, 2)]
+        self.env.agents[agent_id].start_zone = [(0, 0)]
         self.env.agents[agent_id].status = "training"
         if learning_flag:
             self.env.render_mode = "rgb_array"
@@ -386,9 +389,9 @@ class SimulationManager:
 
     def special_training_function(self, num_episodes = 1000):
         rewards = []
-        total_reward = 0
         for episode in range(num_episodes):
-            total_reward, steps = self.run_simulation_step(total_reward, learning_flag=True)
+            total_reward, steps = self.run_simulation_step(total_reward=0, learning_flag=True)
+            # print(self.env.agents["patron_0"].q_table)
             rewards.append(steps)
             print(f"Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
         self.env.close()
@@ -401,17 +404,17 @@ class SimulationManager:
             possible_actions: int = 800,
             ):
         state, _ = self.env.reset()
-        state_tupled = tuple(state.values())
         steps = 0
         action = {}
         done=False
-        while possible_actions > 0 and not done:
+        while not done:
             steps += 1
             for agent_id, agent_instance in self.env.agents.items():
-                action[agent_id] = agent_instance.select_action(state_tupled)
+                action[agent_id] = agent_instance.select_action(state[agent_id])
             next_state, reward, done, _, _ = self.env.step(action)
             if learning_flag:
                 for agent_id, agent_instance in self.env.agents.items():
+                    # print(state[agent_id], action[agent_id], reward, next_state[agent_id])
                     agent_instance.update_q(state[agent_id], action[agent_id], reward, next_state[agent_id])
             state = next_state
             total_reward += reward
@@ -433,18 +436,10 @@ class SimulationManager:
         new_folder = os.path.join(cache_dir, f"{try_dir_base}{max_i + 1}")
         os.makedirs(new_folder)
         for agent_id, agent_instance in self.env.agents.items():
-            table_agent_path = os.path.join(new_folder, f"table_{agent_id}.json")
-            table = self.serialize_keys(agent_instance.q_table)
-            with open(table_agent_path, 'w') as f1:
-                json.dump(table, f1)
+            table_agent_path = os.path.join(new_folder, f"table_{agent_id}.pkl")
+            with open(table_agent_path, 'wb') as f:
+                pickle.dump(agent_instance.q_table, f)  # Сохраняем Q-таблицы с помощью pickle
         print(f"Q-таблицы сохранены в {new_folder}")
-        
-    def serialize_keys(self, table):
-        new_table = {}
-        for key, value in table.items():
-            str_key = str(key)
-            new_table[str_key] = value
-        return new_table
 
     def load_tables(self, agents_to_load: List, progon_number: int = None, cache_dir: str = "cache", try_dir_base: str = "progon_"):
         if progon_number is None:
@@ -459,13 +454,15 @@ class SimulationManager:
         if not os.path.exists(progon_folder):
             raise ValueError(f"Попытка {progon_number} не существует.")
         for agent_id in agents_to_load:
-            file_path = os.path.join(progon_folder, f"table_{agent_id}.json")
+            file_path = os.path.join(progon_folder, f"table_{agent_id}.pkl")
             if os.path.exists(file_path):
-                with open(file_path, 'r') as f1:
-                    self.env.agents[agent_id].q_table = json.load(f1)
+                with open(file_path, 'rb') as f:
+                    self.env.agents[agent_id].q_table = pickle.load(f)  # Загружаем Q-таблицы с помощью pickle
             else:
                 print(f"Файл с agent_id {agent_id} не найден.")
         print(f"Таблицы успешно загружены из {progon_folder}")
+
+
 
     def build_plot(self, rewards: List):
         plt.plot(rewards)

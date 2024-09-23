@@ -30,7 +30,7 @@ class Patron(BaseAgent):
             alpha=0.1,
             gamma=0.99,
             epsilon=1.0,
-            epsilon_decay=0.995,
+            epsilon_decay=0.95,
             min_epsilon=0.01,
             **kwargs
     ):
@@ -54,12 +54,16 @@ class Patron(BaseAgent):
         new_q = self.get_q(state, action) + self.alpha * td_error
         self.q_table[(state, action)] = new_q
 
-    def select_action(self, state):
+    def select_action(self, agent_location):
         if np.random.rand() < self.epsilon:
             return self.action_space.sample()  # Exploration
         else:
             all_actions = range(self.action_space.n)
-            return max(all_actions, key=lambda a: self.get_q(state, a))  # Exploitation
+            # print("all_actions", all_actions)
+            # print("agent_location", agent_location)
+            # print("action_list", [self.get_q(agent_location, a) for a in all_actions])
+            # print("max", max(all_actions, key=lambda a: self.get_q(agent_location, a)))
+            return max(all_actions, key=lambda a: self.get_q(agent_location, a))  # Exploitation
 
     def decay_epsilon(self):
         self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
@@ -97,7 +101,7 @@ class Altruist(BaseAgent):
         new_q = self.get_q(state, action) + self.alpha * td_error
         self.q_table[(state, action)] = new_q
 
-    def select_action(self, state):
+    def select_action(self, agent_location):
         match self.status:
             case "random":
                 return self.action_space.sample()
@@ -106,7 +110,7 @@ class Altruist(BaseAgent):
                     return self.action_space.sample()  # Exploration
                 else:
                     all_actions = range(self.action_space.n)
-                    return max(all_actions, key=lambda a: self.get_q(state, a))  # Exploitation
+                    return max(all_actions, key=lambda a: self.get_q(agent_location, a))  # Exploitation
             case _:
                 return self.action_space.sample()
 

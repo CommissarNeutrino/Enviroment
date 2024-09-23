@@ -27,11 +27,11 @@ class WorldEnv(gym.Env):
         self.walls_positions = walls_positions
         self.doors_positions = doors_positions
         self._action_to_direction = {
-            0: np.array([0, 0]),
+            0: np.array([0, -1]),
             1: np.array([1, 0]),
             2: np.array([0, 1]),
             3: np.array([-1, 0]),
-            4: np.array([0, -1]),
+            4: np.array([0, 0]),
         }
 
     def _get_obs(self):
@@ -51,10 +51,11 @@ class WorldEnv(gym.Env):
     def step(self, action):
         # Официально больше не поддерживаем множественное число патронов/альтруистов
         terminated = False
-        agent_id = "altruist_0"
-        agent_instance = self.agents[agent_id]
-        direction = self._action_to_direction[action[agent_id]]
-        agent_instance.location = self.altruist_decision_process(agent_instance, direction)
+        if "altruist_0" in self.agents:
+            agent_id = "altruist_0"
+            agent_instance = self.agents[agent_id]
+            direction = self._action_to_direction[action[agent_id]]
+            agent_instance.location = self.altruist_decision_process(agent_instance, direction)
         agent_id = "patron_0"
         agent_instance = self.agents[agent_id]
         direction = self._action_to_direction[action[agent_id]]
@@ -101,8 +102,9 @@ class WorldEnv(gym.Env):
         return False
 
     def decision_other_agents(self, new_position):
-        if tuple(new_position) == self.agents["altruist_0"].location:
-            return False
+        if "altruist_0" in self.agents:
+            if tuple(new_position) == self.agents["altruist_0"].location:
+                return False
         return True
     
     def render(self):
