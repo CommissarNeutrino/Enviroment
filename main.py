@@ -6,6 +6,7 @@ import os  # для Q table нужно
 import json  # # для Q table нужно
 from map_creation import Map_Creation
 from for_special_training.training import Training_Manager
+# Технический долг: посмотреть как реализуется action space в гимназиум по-нормальному?
 
 class SimulationManager:
 
