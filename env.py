@@ -49,35 +49,35 @@ class WorldEnv(gym.Env):
         return observation, info
 
     def step(self, action):
+        # Официально больше не поддерживаем множественное число патронов/альтруистов
         terminated = False
-        new_positions = set()
-        for agent_id, agent_instance in self.agents.items():
-            direction = self._action_to_direction[action[agent_id]]
-            agent_instance.location = self.decision_process(agent_instance, direction, new_positions)
-            if not terminated and agent_id.startswith("patron"):
-                if np.array_equal(agent_instance.location, self.target_location):
-                    terminated = True
-                    break
+        agent_id = "altruist_0"
+        agent_instance = self.agents[agent_id]
+        direction = self._action_to_direction[action[agent_id]]
+        agent_instance.location = self.altruist_decision_process(agent_instance, direction)
+        agent_id = "patron_0"
+        agent_instance = self.agents[agent_id]
+        direction = self._action_to_direction[action[agent_id]]
+        agent_instance.location = self.patron_decision_process(agent_instance, direction)
+        if np.array_equal(agent_instance.location, self.target_location):
+            terminated = True
         reward = 1 if terminated else 0
         observation = self._get_obs()
         info = _get_info()
         return observation, reward, terminated, False, info
 
-    def render(self):
-        if self.render_mode == "human":
-            # Отрисовываем только при вызове этого метода
-            self.renderer.render(self.agents.values(), self.target_location, self.walls_positions, self.doors_positions)
-
-    def close(self):
-        if self.render_mode == "human":
-            self.renderer.close()
-
-    def decision_process(self, agent_instance, direction, new_positions):
+    def altruist_decision_process(self, agent_instance, direction):
         new_position = self.decision_grid_edges(agent_instance, direction)
         if (self.decision_walls_positions(new_position)
-                and self.decision_doors_positions(agent_instance, new_position)
-                and self.decision_other_agents(new_position, new_positions)):
-            new_positions.add(tuple(new_position))
+                and self.decision_doors_positions(new_position)):
+            return tuple(new_position)
+        return agent_instance.location
+    
+    def patron_decision_process(self, agent_instance, direction):
+        new_position = self.decision_grid_edges(agent_instance, direction)
+        if (self.decision_walls_positions(new_position)
+                and self.decision_doors_positions(new_position)
+                and self.decision_other_agents(new_position)):
             return tuple(new_position)
         return agent_instance.location
 
@@ -88,26 +88,31 @@ class WorldEnv(gym.Env):
         return new_position
 
     def decision_walls_positions(self, new_position):
-        if self._is_immutable_block(new_position):
+        if tuple(new_position) in self.walls_positions:
             return False
         return True
 
-    def decision_doors_positions(self, agent_instance, new_position):
-        if not self._is_door(new_position):
+    def decision_doors_positions(self, new_position):
+        button_coords = self.doors_positions.get(tuple(new_position), False)
+        if not button_coords:
+            return True
+        if button_coords == self.agents["altruist_0"].location:
             return True
         return False
 
-    @staticmethod
-    def decision_other_agents(new_position, new_positions):
-        if tuple(new_position) in new_positions:
+    def decision_other_agents(self, new_position):
+        if tuple(new_position) == self.agents["altruist_0"].location:
             return False
         return True
+    
+    def render(self):
+        if self.render_mode == "human":
+            # Отрисовываем только при вызове этого метода
+            self.renderer.render(self.agents.values(), self.target_location, self.walls_positions, self.doors_positions)
 
-    def _is_immutable_block(self, position):
-        return tuple(position) in self.walls_positions
-
-    def _is_door(self, position):
-        return self.doors_positions.get(tuple(position), False)
+    def close(self):
+        if self.render_mode == "human":
+            self.renderer.close()
     
     @property
     def render_mode(self):

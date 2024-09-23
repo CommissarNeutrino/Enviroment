@@ -384,7 +384,7 @@ class SimulationManager:
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
-    def special_training_function(self, num_episodes = 100):
+    def special_training_function(self, num_episodes = 1000):
         rewards = []
         total_reward = 0
         for episode in range(num_episodes):
