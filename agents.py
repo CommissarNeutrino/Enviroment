@@ -8,6 +8,19 @@ class BaseAgent:
         self.agent_type = agent_type
         self.location = location
         self.start_zone = []
+        self.status = ""
+
+    def get_q(self, state, action):
+        pass
+
+    def update_q(self, state, action, reward, next_state):
+        pass
+
+    def select_action(self, state):
+        pass
+
+    def decay_epsilon(self):
+        pass
 
 
 class Patron(BaseAgent):
@@ -40,7 +53,6 @@ class Patron(BaseAgent):
         td_error = td_target - self.get_q(state, action)
         new_q = self.get_q(state, action) + self.alpha * td_error
         self.q_table[(state, action)] = new_q
-        self.decay_epsilon()
 
     def select_action(self, state):
         if np.random.rand() < self.epsilon:
@@ -78,14 +90,28 @@ class Altruist(BaseAgent):
         return self.q_table.get((state, action), 0.0)
 
     def update_q(self, state, action, reward, next_state):
-        self.decay_epsilon()
+        all_actions = range(self.action_space.n)
+        best_next_action = max(all_actions, key=lambda a: self.get_q(next_state, a))
+        td_target = reward + self.gamma * self.get_q(next_state, best_next_action)
+        td_error = td_target - self.get_q(state, action)
+        new_q = self.get_q(state, action) + self.alpha * td_error
+        self.q_table[(state, action)] = new_q
 
     def select_action(self, state):
-        return self.action_space.sample()  # Exploration
+        match self.status:
+            case "random":
+                return self.action_space.sample()
+            case "training":
+                if np.random.rand() < self.epsilon:
+                    return self.action_space.sample()  # Exploration
+                else:
+                    all_actions = range(self.action_space.n)
+                    return max(all_actions, key=lambda a: self.get_q(state, a))  # Exploitation
+            case _:
+                return self.action_space.sample()
 
     def decay_epsilon(self):
         self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
-
 
 # Создаем окружение
 # env = gym.make('gym_examples/GridWorld-v0', render_mode='rgb_array')

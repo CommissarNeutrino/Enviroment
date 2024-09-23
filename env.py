@@ -18,22 +18,14 @@ class WorldEnv(gym.Env):
         "name": "v0",
     }
 
-    def __init__(self, size_x, size_y, target_location, immutable_blocks, doors, render_mode=None):
+    def __init__(self, size_x, size_y, target_location, walls_positions, doors_positions, render_mode=None):
         self.render_mode = render_mode
         self.agents = {}
         self.size_x = size_x
         self.size_y = size_y
         self.target_location = target_location
-        self.immutable_blocks = immutable_blocks
-        self.doors = doors
-        # Инициализируем визуализатор только если render_mode задан
-        if self.render_mode is not None:
-            self.renderer = GridRenderer(
-                grid_width=self.size_x,
-                grid_height=self.size_y
-            )
-        if render_mode is not None and render_mode not in self.metadata.get("render_modes", []):
-            raise ValueError(f"Invalid render_mode '{render_mode}'. Supported modes: {self.metadata['render_modes']}")
+        self.walls_positions = walls_positions
+        self.doors_positions = doors_positions
         self._action_to_direction = {
             0: np.array([0, 0]),
             1: np.array([1, 0]),
@@ -69,25 +61,21 @@ class WorldEnv(gym.Env):
         reward = 1 if terminated else 0
         observation = self._get_obs()
         info = _get_info()
-
         return observation, reward, terminated, False, info
 
     def render(self):
-        if self.render_mode == "human" or self.render_mode == "rgb_array":
+        if self.render_mode == "human":
             # Отрисовываем только при вызове этого метода
-            # print(self.agents)
-            print(self.immutable_blocks)
-            self.renderer.render(self.agents.values(), self.target_location, self.immutable_blocks, self.doors)
+            self.renderer.render(self.agents.values(), self.target_location, self.walls_positions, self.doors_positions)
 
     def close(self):
-        if self.render_mode is not None:
+        if self.render_mode == "human":
             self.renderer.close()
 
-    # Остальные методы остаются без изменений
     def decision_process(self, agent_instance, direction, new_positions):
         new_position = self.decision_grid_edges(agent_instance, direction)
-        if (self.decision_immutable_blocks(new_position)
-                and self.decision_doors(agent_instance, new_position)
+        if (self.decision_walls_positions(new_position)
+                and self.decision_doors_positions(agent_instance, new_position)
                 and self.decision_other_agents(new_position, new_positions)):
             new_positions.add(tuple(new_position))
             return tuple(new_position)
@@ -99,12 +87,12 @@ class WorldEnv(gym.Env):
         )
         return new_position
 
-    def decision_immutable_blocks(self, new_position):
+    def decision_walls_positions(self, new_position):
         if self._is_immutable_block(new_position):
             return False
         return True
 
-    def decision_doors(self, agent_instance, new_position):
+    def decision_doors_positions(self, agent_instance, new_position):
         if not self._is_door(new_position):
             return True
         return False
@@ -116,10 +104,28 @@ class WorldEnv(gym.Env):
         return True
 
     def _is_immutable_block(self, position):
-        return tuple(position) in self.immutable_blocks
+        return tuple(position) in self.walls_positions
 
     def _is_door(self, position):
-        return self.doors.get(tuple(position), False)
+        return self.doors_positions.get(tuple(position), False)
+    
+    @property
+    def render_mode(self):
+        return self._render_mode
+
+    @render_mode.setter
+    def render_mode(self, render_mode):
+        if render_mode is not None and render_mode not in self.metadata.get("render_modes", []):
+            raise ValueError(f"Invalid render_mode '{render_mode}'. Supported modes: {self.metadata['render_modes']}")
+
+        self._render_mode = render_mode
+
+        if render_mode == "human":
+            self.renderer = GridRenderer(
+                grid_width=self.size_x,
+                grid_height=self.size_y
+            )
+
 
     @functools.lru_cache(maxsize=None)
     def observation_space(self):
