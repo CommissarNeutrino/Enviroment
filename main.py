@@ -257,11 +257,15 @@ class SimulationManager:
             learning_flag: bool = True,
             testing_flag: bool = True
     ):
-        self.env = WorldEnv(size_x=5,
-                            size_y=3,
+        walls_positions=set([(1, 0), (1, 1), (4, 1)])
+        doors_positions={(1, 2): (3, 1)}
+        length_of_grid = 5
+        height_of_grid = 3
+        self.env = WorldEnv(size_x=length_of_grid,
+                            size_y=height_of_grid,
                             target_location=(4, 0),
-                            walls_positions=set([(1, 0), (1, 1), (4, 1)]),
-                            doors_positions={(1, 2): (3, 1)},
+                            walls_positions=walls_positions,
+                            doors_positions=doors_positions,
                             render_mode=None
                         )
         agent_id = "patron_0"
@@ -274,6 +278,12 @@ class SimulationManager:
         self.env.agents[agent_id] = Altruist(self.env.action_space())
         self.env.agents[agent_id].start_zone = [(2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]
         self.env.agents[agent_id].status = "training"
+
+        self.env.agents[agent_id].states_of_env["walls_positions"] = walls_positions
+        self.env.agents[agent_id].states_of_env["doors_positions"] = doors_positions
+        self.env.agents[agent_id].states_of_env["length_of_grid"] = length_of_grid
+        self.env.agents[agent_id].states_of_env["height_of_grid"] = height_of_grid
+
         if learning_flag:
             self.env.render_mode = "rgb_array"
             rewards = self.special_training_function()
