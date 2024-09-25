@@ -1,13 +1,9 @@
+import os  # для Q table нужно
+import pickle
+import matplotlib.pyplot as plt
+from typing import List
 from agents import Patron, Altruist  # берем классы агентов из соседнего файла
 from env import WorldEnv  # берем класс среды из соседнего файла
-import matplotlib.pyplot as plt
-from typing import Optional, List
-import os  # для Q table нужно
-import json  # # для Q table нужно
-from map_creation import Map_Creation
-from for_special_training.training import Training_Manager
-import os
-import pickle
 
 # Технический долг: посмотреть как реализуется action space в гимназиум по-нормальному?
 

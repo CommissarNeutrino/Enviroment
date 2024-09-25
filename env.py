@@ -2,7 +2,7 @@ import random
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
-from visualization import GridRenderer  # Импорт классов для визуализации
+from visualization import GridRenderer
 import functools
 
 
