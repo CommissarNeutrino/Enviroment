@@ -42,8 +42,10 @@ class WorldEnv(gym.Env):
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
-        for agent_instance in self.agents.values():
+        for agent_id, agent_instance in self.agents.items():
             agent_instance.location = random.choice(agent_instance.start_zone)
+            if agent_id == "patron_0":
+                print("agent_instance.location", agent_instance.location)
         observation = self._get_obs()
         info = _get_info()
         return observation, info
