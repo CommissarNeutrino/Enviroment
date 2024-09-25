@@ -30,8 +30,8 @@ class Patron(BaseAgent):
             alpha=0.1,
             gamma=0.99,
             epsilon=1.0,
-            epsilon_decay=0.995,
-            min_epsilon=0.0,
+            epsilon_decay=0.95,
+            min_epsilon=0.1,
             **kwargs
     ):
         super().__init__(**kwargs)
@@ -158,7 +158,7 @@ class Altruist(BaseAgent):
         match self.status:
             case "random":
                 #return self.action_space.sample()
-                return 0
+                return 4
             case "training":
                 if np.random.rand() < self.epsilon:
                     return self.action_space.sample()  # Exploration

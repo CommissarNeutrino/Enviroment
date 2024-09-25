@@ -424,7 +424,7 @@ class SimulationManager:
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
-    def special_training_function(self, num_episodes = 300000):
+    def special_training_function(self, num_episodes = 10000):
         rewards = []
         #print("self.env.agents", self.env.agents)
         for episode in range(num_episodes):
@@ -439,7 +439,7 @@ class SimulationManager:
             self,
             total_reward: int,
             learning_flag: bool = False,
-            possible_actions: int = 100,
+            possible_actions: int = 300,
             ):
         state, _ = self.env.reset()
 
