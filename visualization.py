@@ -1,4 +1,6 @@
 import pygame
+import os
+import imageio.v2 as imageio
 
 # Глобальные переменные для путей к изображениям
 GOAL_IMAGE_PATH = 'img/goal.png'
@@ -10,7 +12,7 @@ DOOR_IMAGE_PATH = 'img/door.png'
 BUTTON_IMAGE_PATH = 'img/button.png'
 OBSTACLE_IMAGE_PATH = 'img/obstacle.png'
 
-CELL_SIZE = 50
+CELL_SIZE = 100
 FPS = 60
 
 
@@ -33,22 +35,29 @@ def scale_image(image, target_size=(CELL_SIZE, CELL_SIZE), keep_aspect_ratio=Tru
 
 
 class GridRenderer:
-    """ Класс визуализации, включает управление размерами окна и FPS """
-    def __init__(self, grid_width, grid_height):
+    def __init__(self, grid_width, grid_height, save_frames=False):
         self.grid_width = grid_width
         self.grid_height = grid_height
+        self.save_frames = save_frames  # Флаг для сохранения кадров
+        self.frame_count = 0  # Счётчик кадров
+        self.frames_dir = "frames"  # Папка для сохранения кадров
 
         self.window_size_x = grid_width * CELL_SIZE
         self.window_size_y = grid_height * CELL_SIZE
+        screen_size = (self.window_size_x, self.window_size_y)
+
+        # Убедимся, что папка для кадров существует
+        if self.save_frames and not os.path.exists(self.frames_dir):
+            os.makedirs(self.frames_dir)
 
         self.cell_size = min(self.window_size_x // self.grid_width, self.window_size_y // self.grid_height)
-
-        # Инициализация PyGame и экрана
-        screen_size = (self.window_size_x, self.window_size_y)
         pygame.init()
-        self.screen = pygame.display.set_mode(screen_size, pygame.RESIZABLE)
+        self.screen = pygame.display.set_mode((self.window_size_x, self.window_size_y), pygame.RESIZABLE)
         self.clock = pygame.time.Clock()
-        self.is_running = True  # Переменная для управления состоянием окна
+        self.is_running = True
+
+        self.grid_surface = self.create_grid_surface()
+        self.fps = FPS
 
         # Загружаем и сохраняем оригинальные изображения
         self.original_background_image = scale_image(
@@ -64,7 +73,7 @@ class GridRenderer:
 
         # Сохраняем оригиналы изображений агентов
         self.original_agent_images = {
-            "Patron": scale_image(pygame.image.load(PATRON_IMAGE_PATH), keep_aspect_ratio=True),
+            "Patron": scale_image(pygame.image.load(PATRON_IMAGE_PATH), keep_aspect_ratio=False),
             "Altruist": scale_image(pygame.image.load(ALTRUIST_IMAGE_PATH), keep_aspect_ratio=True),
             "Default": scale_image(pygame.image.load(NO_IMAGE), keep_aspect_ratio=True)
         }
@@ -73,7 +82,7 @@ class GridRenderer:
         self.original_object_images = {
             "Door": scale_image(pygame.image.load(DOOR_IMAGE_PATH), keep_aspect_ratio=True),
             "Button": scale_image(pygame.image.load(BUTTON_IMAGE_PATH), keep_aspect_ratio=True),
-            "Obstacle": scale_image(pygame.image.load(OBSTACLE_IMAGE_PATH), keep_aspect_ratio=True),
+            "Obstacle": scale_image(pygame.image.load(OBSTACLE_IMAGE_PATH), keep_aspect_ratio=False),
         }
 
         self.object_images = self.original_object_images
@@ -144,10 +153,7 @@ class GridRenderer:
         self.handle_events()
 
         if not self.is_running:
-            return  # Прекращаем рендеринг, если приложение остановлено
-
-        """ Отрисовка сетки, агентов, цели и объектов на экране """
-        self.handle_events()
+            return
 
         # Отрисовка фонового изображения
         self.screen.blit(self.background_image, (0, 0))
@@ -204,45 +210,33 @@ class GridRenderer:
         # Обновляем экран
         pygame.display.flip()
 
-        # Задержка для поддержания заданного FPS
+        # Сохраняем текущий кадр, если включена запись
+        if self.save_frames:
+            self.save_frame()
+
         self.clock.tick(self.fps)
 
-    # def render(self, agents, goal_location):
-    #     """ Отрисовка сетки, агентов и цели на экране """
-    #     self.handle_resize_event()
-    #
-    #     # Отрисовка фонового изображения
-    #     self.screen.blit(self.background_image, (0, 0))
-    #
-    #     # Используем предварительно созданную сетку
-    #     self.screen.blit(self.grid_surface, (0, 0))
-    #
-    #     # Отрисовка цели
-    #     goal_rect = pygame.Rect(
-    #         goal_location[0] * self.cell_size,
-    #         goal_location[1] * self.cell_size,
-    #         self.cell_size, self.cell_size
-    #     )
-    #     self.screen.blit(self.goal_image, goal_rect)
-    #
-    #     # Рендеринг агентов
-    #     for agent in agents:
-    #         agent_rect = pygame.Rect(
-    #             agent.location[0] * self.cell_size,
-    #             agent.location[1] * self.cell_size,
-    #             self.cell_size, self.cell_size
-    #         )
-    #         agent.type = agent.__class__.__name__
-    #         agent_image = self.agent_images.get(agent.type, self.agent_images["Default"])
-    #         self.screen.blit(agent_image, agent_rect)
-    #
-    #     # Обновляем экран
-    #     pygame.display.flip()
-    #
-    #     # Задержка для поддержания заданного FPS
-    #     self.clock.tick(self.fps)
+    def save_frame(self):
+        """ Сохраняет текущий кадр в папку с изображениями """
+        frame_filename = os.path.join(self.frames_dir, f"frame_{self.frame_count:04d}.png")
+        pygame.image.save(self.screen, frame_filename)
+        self.frame_count += 1
+
+    @staticmethod
+    def create_video_from_frames(output_path='output_video.mp4', fps=60):
+        """ Собирает видео из сохранённых кадров """
+        frames_dir = "frames"
+        frames = sorted([os.path.join(frames_dir, f) for f in os.listdir(frames_dir) if f.endswith('.png')])
+        with imageio.get_writer(output_path, fps=fps) as writer:
+            for frame_path in frames:
+                image = imageio.imread(frame_path)
+                writer.append_data(image)
 
     @staticmethod
     def close():
-        """ Закрываем окно и выходим из PyGame """
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
         pygame.quit()
