@@ -48,6 +48,7 @@ class GridRenderer:
         pygame.init()
         self.screen = pygame.display.set_mode(screen_size, pygame.RESIZABLE)
         self.clock = pygame.time.Clock()
+        self.is_running = True  # Переменная для управления состоянием окна
 
         # Загружаем и сохраняем оригинальные изображения
         self.original_background_image = scale_image(
@@ -120,10 +121,12 @@ class GridRenderer:
             for object_type, original_image in self.original_object_images.items()
         }
 
-    def handle_resize_event(self):
+    def handle_events(self):
         """ Обрабатываем изменение размеров окна """
         for event in pygame.event.get():
-            if event.type == pygame.VIDEORESIZE:
+            if event.type == pygame.QUIT:
+                self.is_running = False  # Останавливаем работу приложения
+            elif event.type == pygame.VIDEORESIZE:
                 self.window_size_x, self.window_size_y = event.w, event.h
                 self.cell_size = min(self.window_size_x // self.grid_width, self.window_size_y // self.grid_height)
 
@@ -138,8 +141,13 @@ class GridRenderer:
                 self.grid_surface = self.create_grid_surface()
 
     def render(self, agents, goal_location, immutable_blocks, doors):
+        self.handle_events()
+
+        if not self.is_running:
+            return  # Прекращаем рендеринг, если приложение остановлено
+
         """ Отрисовка сетки, агентов, цели и объектов на экране """
-        self.handle_resize_event()
+        self.handle_events()
 
         # Отрисовка фонового изображения
         self.screen.blit(self.background_image, (0, 0))

@@ -115,8 +115,7 @@ class WorldEnv(gym.Env):
             self.renderer.render(self.agents.values(), self.target_location, self.walls_positions, self.doors_positions)
 
     def close(self):
-        if self.render_mode == "human":
-            self.renderer.close()
+        self.renderer.close()
     
     @property
     def render_mode(self):

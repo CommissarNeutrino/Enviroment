@@ -538,7 +538,7 @@ if __name__ == "__main__":
 
     # можно передать из командной строки агрументы no_learn или no_test и тогда будет что-то одно
     # ПЕРЕПИСАТЬ НА ЛОГИКУ КОНЕЧНОГО ПОЛЬЗОВАТЕЛЯ ***
-    map_type = "11"
+    map_type = "2c"
     if "no_learn" in sys.argv:
         learning_needed = False
     if "no_test" in sys.argv:
