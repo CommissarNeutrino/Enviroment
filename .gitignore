@@ -4,4 +4,4 @@ __pycache__/*
 *.pyc
 .idea
 /video/frames/*
-/cache/progon*
+/cache/*
