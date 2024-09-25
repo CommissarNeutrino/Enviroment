@@ -11,8 +11,10 @@ NO_IMAGE = 'img/no_image.png'
 DOOR_IMAGE_PATH = 'img/door.png'
 BUTTON_IMAGE_PATH = 'img/button.png'
 OBSTACLE_IMAGE_PATH = 'img/obstacle.png'
-
-CELL_SIZE = 100
+FRAMES_DIR = 'video/frames'
+SAVE_FRAMES = True
+CREATE_VIDEO = True
+CELL_SIZE = 112
 FPS = 60
 
 
@@ -34,13 +36,47 @@ def scale_image(image, target_size=(CELL_SIZE, CELL_SIZE), keep_aspect_ratio=Tru
     return pygame.transform.scale(image, (target_width, target_height))
 
 
+def create_video_from_frames(size_x, size_y, output_path='video/output_video.mp4', fps=int(FPS/6), episode_count=3):
+    """ Собирает видео из сохранённых кадров, добавляя эпизодные заставки """
+    frames_dir = "video/frames"
+    frames = sorted([os.path.join(frames_dir, f) for f in os.listdir(frames_dir) if f.endswith('.png')])
+
+    with imageio.get_writer(output_path, fps=fps) as writer:
+        for episode in range(episode_count):
+            # Добавляем титульный кадр для каждого эпизода
+            episode_frame = create_episode_frame(episode + 1, size_x, size_y)
+            for _ in range(fps):  # Длительность титульного кадра (1 секунда)
+                writer.append_data(episode_frame)
+
+            # Добавляем кадры для текущего эпизода
+            for frame_path in frames:
+                image = imageio.imread(frame_path)
+                writer.append_data(image)
+    return
+
+
+def create_episode_frame(episode_number, size_x, size_y):
+    """ Создает изображение с текстом 'Episode #X' """
+    font = pygame.font.Font(None, 74)
+    text_surface = font.render(f'Episode #{episode_number}', True, (255, 255, 255))
+    text_rect = text_surface.get_rect(center=(size_x/2, size_y/2))
+
+    # Создаем изображение с черным фоном и текстом
+    episode_image = pygame.Surface((size_x, size_y))
+    episode_image.fill((0, 0, 0))
+    episode_image.blit(text_surface, text_rect)
+
+    # Преобразуем изображение в массив данных
+    return pygame.surfarray.array3d(episode_image).swapaxes(0, 1)  # swapaxes нужно для корректного порядка
+
+
 class GridRenderer:
-    def __init__(self, grid_width, grid_height, save_frames=False):
+    def __init__(self, grid_width, grid_height):
         self.grid_width = grid_width
         self.grid_height = grid_height
-        self.save_frames = save_frames  # Флаг для сохранения кадров
+        self.save_frames = SAVE_FRAMES  # Флаг для сохранения кадров
         self.frame_count = 0  # Счётчик кадров
-        self.frames_dir = "frames"  # Папка для сохранения кадров
+        self.frames_dir = FRAMES_DIR  # Папка для сохранения кадров
 
         self.window_size_x = grid_width * CELL_SIZE
         self.window_size_y = grid_height * CELL_SIZE
@@ -149,7 +185,7 @@ class GridRenderer:
                 # Пересоздаем сетку с новым размером клеток
                 self.grid_surface = self.create_grid_surface()
 
-    def render(self, agents, goal_location, immutable_blocks, doors):
+    def render(self, agents, goal_location, immutable_blocks, doors, step_number, episod_number):
         self.handle_events()
 
         if not self.is_running:
@@ -206,6 +242,8 @@ class GridRenderer:
             agent.type = agent.__class__.__name__
             agent_image = self.agent_images.get(agent.type, self.agent_images["Default"])
             self.screen.blit(agent_image, agent_rect)
+        # Отображение номера шага
+        self.draw_info(step_number, episod_number)
 
         # Обновляем экран
         pygame.display.flip()
@@ -222,21 +260,42 @@ class GridRenderer:
         pygame.image.save(self.screen, frame_filename)
         self.frame_count += 1
 
-    @staticmethod
-    def create_video_from_frames(output_path='output_video.mp4', fps=60):
-        """ Собирает видео из сохранённых кадров """
-        frames_dir = "frames"
-        frames = sorted([os.path.join(frames_dir, f) for f in os.listdir(frames_dir) if f.endswith('.png')])
-        with imageio.get_writer(output_path, fps=fps) as writer:
-            for frame_path in frames:
-                image = imageio.imread(frame_path)
-                writer.append_data(image)
+    def draw_info(self, step_number, episode_number):
+        # """ Отображает номер шага на экране """
+        # font = pygame.font.Font(None, 36)  # Создаем шрифт
+        #
+        # text_surface = font.render(f'E: {episod_number + 1} S: {step_number}', True, (255, 255, 255))  # Создаем текст
+        # text_rect = text_surface.get_rect(center=(CELL_SIZE * 1.5, CELL_SIZE // 2))  # позиция текста
+        #
+        # # Отображаем текст на экране
+        # self.screen.blit(text_surface, text_rect)
+        """ Отображает номер шага и эпизода на экране с переводом строки """
+        font = pygame.font.Font(None, 36)  # Шрифт
+        color = (255, 255, 255)  # Белый цвет текста
 
-    @staticmethod
-    def close():
+        # Создаем строки для шага и эпизода
+        episode_text = f'Round: {episode_number+1}'
+        step_text = f'Step: {step_number}'
+
+
+        # Создаем поверхности для каждой строки
+        step_surface = font.render(step_text, True, color)
+        episode_surface = font.render(episode_text, True, color)
+
+        step_rect = step_surface.get_rect(topleft=(CELL_SIZE * 1, CELL_SIZE * 0.7))  # Первая строка
+        episode_rect = episode_surface.get_rect(topleft=(CELL_SIZE * 1, CELL_SIZE * 0.2))  # Вторая строка
+
+        # Отображаем текст на экране
+        self.screen.blit(step_surface, step_rect)
+        self.screen.blit(episode_surface, episode_rect)
+
+    def close(self):
+        if CREATE_VIDEO:
+            create_video_from_frames(self.window_size_x, self.window_size_y)
         running = True
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
         pygame.quit()
+        return

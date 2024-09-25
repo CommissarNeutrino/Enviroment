@@ -43,7 +43,7 @@ class SimulationManager:
             self.env.render_mode = "human"
             total_reward = 0
             for episode in range(10):
-                total_reward, steps = self.run_simulation_step(total_reward, learning_flag=False)
+                total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
@@ -81,7 +81,7 @@ class SimulationManager:
             self.env.render_mode = "human"
             total_reward = 0
             for episode in range(10):
-                total_reward, steps = self.run_simulation_step(total_reward, learning_flag=False)
+                total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
@@ -114,8 +114,8 @@ class SimulationManager:
                 self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
             self.env.render_mode = "human"
             total_reward = 0
-            for episode in range(10):
-                total_reward, steps = self.run_simulation_step(total_reward, learning_flag=False)
+            for episode in range(3):
+                total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
@@ -158,8 +158,8 @@ class SimulationManager:
                 self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
             self.env.render_mode = "human"
             total_reward = 0
-            for episode in range(10):
-                total_reward, steps = self.run_simulation_step(total_reward, learning_flag=False)
+            for episode in range(3):
+                total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
     
@@ -209,8 +209,8 @@ class SimulationManager:
 
             self.env.render_mode = "human"
             total_reward = 0
-            for episode in range(10):
-                total_reward, steps = self.run_simulation_step(total_reward, learning_flag=False)
+            for episode in range(3):
+                total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
@@ -248,7 +248,7 @@ class SimulationManager:
             self.env.render_mode = "human"
             total_reward = 0
             for episode in range(10):
-                total_reward, steps = self.run_simulation_step(total_reward, learning_flag=False)
+                total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
@@ -298,7 +298,7 @@ class SimulationManager:
             self.env.render_mode = "human"
             total_reward = 0
             for episode in range(10):
-                total_reward, steps = self.run_simulation_step(total_reward, learning_flag=False)
+                total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
@@ -332,7 +332,7 @@ class SimulationManager:
             self.env.render_mode = "human"
             total_reward = 0
             for episode in range(10):
-                total_reward, steps = self.run_simulation_step(total_reward, learning_flag=False)
+                total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
@@ -370,7 +370,7 @@ class SimulationManager:
             self.env.render_mode = "human"
             total_reward = 0
             for episode in range(10):
-                total_reward, steps = self.run_simulation_step(total_reward, learning_flag=False)
+                total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
@@ -420,7 +420,7 @@ class SimulationManager:
             self.env.render_mode = "human"
             total_reward = 0
             for episode in range(10):
-                total_reward, steps = self.run_simulation_step(total_reward, learning_flag=False)
+                total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
@@ -428,7 +428,7 @@ class SimulationManager:
         rewards = []
         #print("self.env.agents", self.env.agents)
         for episode in range(num_episodes):
-            total_reward, steps = self.run_simulation_step(total_reward=0, learning_flag=True)
+            total_reward, steps = self.run_simulation_step(episode, total_reward=0, learning_flag=True)
             # print(self.env.agents["patron_0"].q_table)
             rewards.append(steps)
             print(f"Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
@@ -437,6 +437,7 @@ class SimulationManager:
 
     def run_simulation_step(
             self,
+            episode_number,
             total_reward: int,
             learning_flag: bool = False,
             possible_actions: int = 100,
@@ -456,8 +457,8 @@ class SimulationManager:
 
         steps = 0
         action = {}
-        done=False
-        while possible_actions>0 and not done:
+        done = False
+        while possible_actions > 0 and not done:
             steps += 1
             for agent_id, agent_instance in self.env.agents.items():
                 action[agent_id] = agent_instance.select_action(state[agent_id])
@@ -477,7 +478,7 @@ class SimulationManager:
             state = next_state
             total_reward += reward
             possible_actions -= 1
-            self.env.render()
+            self.env.render(steps, episode_number)
         if learning_flag:
             for agent_instance in self.env.agents.values():
                 agent_instance.decay_epsilon()
@@ -519,7 +520,6 @@ class SimulationManager:
             else:
                 print(f"Файл с agent_id {agent_id} не найден.")
         print(f"Таблицы успешно загружены из {progon_folder}")
-
 
 
     def build_plot(self, rewards: List):
