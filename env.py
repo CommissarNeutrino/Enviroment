@@ -63,7 +63,7 @@ class WorldEnv(gym.Env):
         agent_instance.location = self.patron_decision_process(agent_instance, direction)
         if np.array_equal(agent_instance.location, self.target_location):
             terminated = True
-        reward = 1 if terminated else 0
+        reward = 1 if terminated else -0.15
         observation = self._get_obs()
         info = _get_info()
         return observation, reward, terminated, False, info
