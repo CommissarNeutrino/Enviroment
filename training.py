@@ -9,8 +9,8 @@ from config import show_graph, cache_results
 
 #from collections import deque
 
-class BaseAgent:
-    def __init__(self):
+class BaseTrainer:
+    def __init__(self, agent, env):
         pass 
 
     def train(self):
@@ -20,19 +20,46 @@ class BaseAgent:
         pass
 
 
-class AltruistQ(BaseAgent):
-    def __init__(self, q_table, time_horizon, decay_coefficient):
+class AltruistTraining(BaseTrainer):
+    def __init__(self,
+            action_space,
+            q_table, 
+            time_horizon, 
+            decay_coefficient,
+            alpha=0.1,
+            gamma=0.99,
+            epsilon=1.0,
+            epsilon_decay=0.95,
+            min_epsilon=0.01,
+            **kwargs):
+
+        super().__init__(**kwargs)
+        self.alpha = alpha  # Learning rate
+        self.gamma = gamma  # Discount factor
+        self.epsilon = epsilon  # Exploration rate
+        self.epsilon_decay = epsilon_decay
+        self.min_epsilon = min_epsilon
+
+        # todo
         self.table_to_belong_q = q_table.copy()
-        self.states_of_env = {}            # { int: { "patron_position": tuple } }
+        self.states_of_env = {}    # { int: { "patron_position": tuple, "altruist_position": tuple, "doors_positions": tuple } }
         self.current_time = 0
         self.time_horizon = time_horizon
         self.decay_coefficient = decay_coefficient
-        self.action_space = env.action_space
+        self.action_space = action_space
+        # todo
+        self._action_to_direction = {
+            0: np.array([0, -1]),
+            1: np.array([1, 0]),
+            2: np.array([0, 1]),
+            3: np.array([-1, 0]),
+            4: np.array([0, 0]),
+        }
 
     def select_action(self):
         pass
 
-    def update(self, t):
+    def update_table_to_belong_q(self, t):
         score = 0
         exp = 1
         score_time = t
@@ -41,13 +68,14 @@ class AltruistQ(BaseAgent):
             print("aaaaaaaaaaa")
 
         reachable_tiles = set(self.states_of_env[t]["patron_position"])
-
+        
         while(score_time - t < self.time_horizon):
             next_tiles = set()
             for tile in reachable_tiles:
-                for next_tile in tile + :
-                    if ALLOWED-MOVE FROM tile TO next_tile ON board[score_time]:
-                    ADD next_tile TO next_tiles
+                for offset in self._action_to_direction.items():
+                    #todo
+                    if _allowed_step(tile, offset):
+                        next_tiles.add(tile + offset)
                  
             score = score + exp * len(next_tiles)
             score_time += 1

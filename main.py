@@ -1,121 +1,486 @@
 from agents import Patron, Altruist  # берем классы агентов из соседнего файла
 from env import WorldEnv  # берем класс среды из соседнего файла
-#  import matplotlib.pyplot as plt # ЗАЧЕМ? ПРОКЛЯТО? Проверить
-from typing import Optional  # раньше тут вызывался еще и List
+import matplotlib.pyplot as plt
+from typing import Optional, List
 import os  # для Q table нужно
 import json  # # для Q table нужно
-from map_creation import Map_Creation
-
+#from map_creation import Map_Creation
+from training import Training_Manager
+import os
+import pickle
 
 # Технический долг: посмотреть как реализуется action space в гимназиум по-нормальному?
+
 class SimulationManager:
 
-    def __init__(self, map_type):
-        self.map_type = map_type
-
-    def run_simulation(
+    def Scenary_1a(
             self,
-            progon_number: Optional[int] = None,
             learning_flag: bool = True,
-            testing_flag: bool = True,
-            
+            testing_flag: bool = True
     ):
+        self.env = WorldEnv(size_x=5,
+                            size_y=3,
+                            target_location=(4, 0),
+                            walls_positions=set(),
+                            doors_positions={},
+                            render_mode=None
+                        )
+        agent_id = f"patron_0"
+        self.env.agents[agent_id] = Patron(self.env.action_space())
+        self.env.agents[agent_id].start_zone = [(0, 0)]
+        self.env.agents[agent_id].status = "training"
         if learning_flag:
-            self.learning()
-        else:
-            self.load_tables(progon_number)
+            self.env.render_mode = "rgb_array"
+            rewards = self.special_training_function()
+            self.cache_tables(cache_dir="cache/1a")
+            self.build_plot(rewards)
+            print("Episode finished!")
         if testing_flag:
-            self.show_trained_behavior()
+            agents_to_test = ["patron_0"]
+            self.load_tables(agents_to_load = agents_to_test, cache_dir="cache/1a")
+            for agent_id in agents_to_test:
+                self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
+            self.env.render_mode = "human"
+            total_reward = 0
+            for episode in range(10):
+                total_reward, steps = self.run_simulation_step(total_reward, learning_flag=False)
+                print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
+            self.env.close()
 
-    def learning(
+    def Scenary_1b(
             self,
-            patron_num: int = 1,
-            altruist_num: int = 1,
-            render_mode: str = "rgb_array",
-            num_episodes: int = 1000
+            learning_flag: bool = True,
+            testing_flag: bool = True
     ):
-        # Этот метод запускает процесс обучения агентов
-        # Я ВООБЩЕ НЕ ПОНЯЛА ЭТУ ЛОГИКУ. ОБСУДИТЬ ***
+        self.env = WorldEnv(size_x=5,
+                            size_y=3,
+                            target_location=(4, 0),
+                            walls_positions=set(),
+                            doors_positions={},
+                            render_mode=None
+                        )
+        agent_id = "patron_0"
+        self.env.agents[agent_id] = Patron(self.env.action_space())
+        self.env.agents[agent_id].start_zone = [(0, 0), (0, 1), (0, 2)]
+        self.env.agents[agent_id].status = "training"
+        agent_id = "altruist_0"
+        self.env.agents[agent_id] = Altruist(self.env.action_space())
+        self.env.agents[agent_id].start_zone = [(2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]
+        self.env.agents[agent_id].status = "random"
+        if learning_flag:
+            self.env.render_mode = "rgb_array"
+            rewards = self.special_training_function()
+            self.cache_tables(cache_dir="cache/1b")
+            self.build_plot(rewards)
+            print("Episode finished!")
+        if testing_flag:
+            agents_to_test = ["patron_0"]
+            self.load_tables(agents_to_load = agents_to_test, cache_dir="cache/1b")
+            for agent_id in agents_to_test:
+                self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
+            self.env.render_mode = "human"
+            total_reward = 0
+            for episode in range(10):
+                total_reward, steps = self.run_simulation_step(total_reward, learning_flag=False)
+                print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
+            self.env.close()
 
+    def Scenary_2a(
+            self,
+            learning_flag: bool = True,
+            testing_flag: bool = True
+    ):
+        self.env = WorldEnv(size_x=5,
+                            size_y=3,
+                            target_location=(4, 0),
+                            walls_positions=set([(1, 0), (1, 1), (4, 1)]),
+                            doors_positions={},
+                            render_mode=None
+                        )
+        agent_id = "patron_0"
+        self.env.agents[agent_id] = Patron(self.env.action_space())
+        self.env.agents[agent_id].start_zone = [(0, 0), (0, 1), (0, 2)]
+        self.env.agents[agent_id].status = "training"
+        if learning_flag:
+            self.env.render_mode = "rgb_array"
+            rewards = self.special_training_function()
+            self.cache_tables(cache_dir="cache/2a")
+            self.build_plot(rewards)
+            print("Episode finished!")
+        if testing_flag:
+            agents_to_test = ["patron_0"]
+            self.load_tables(agents_to_load = agents_to_test, cache_dir="cache/2a")
+            for agent_id in agents_to_test:
+                self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
+            self.env.render_mode = "human"
+            total_reward = 0
+            for episode in range(10):
+                total_reward, steps = self.run_simulation_step(total_reward, learning_flag=False)
+                print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
+            self.env.close()
+
+    def Scenary_2b(
+            self,
+            learning_flag: bool = True,
+            testing_flag: bool = True
+    ):
+        walls_positions=set([(1, 0), (1, 1), (4, 1)])
+        doors_positions={}
+        length_of_grid = 5
+        height_of_grid = 3
+        self.env = WorldEnv(size_x=length_of_grid,
+                            size_y=height_of_grid,
+                            target_location=(4, 0),
+                            walls_positions=walls_positions,
+                            doors_positions=doors_positions,
+                            render_mode=None
+                        )
+        agent_id = "patron_0"
+        self.env.agents[agent_id] = Patron(self.env.action_space())
+        self.env.agents[agent_id].start_zone = [(0, 0), (0, 1), (0, 2)]
+        self.env.agents[agent_id].status = "training"
+        agent_id = "altruist_0"
+        self.env.agents[agent_id] = Altruist(self.env.action_space())
+        #self.env.agents[agent_id].start_zone = [(2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]
+        self.env.agents[agent_id].start_zone = [(2, 0), (2, 1), (3, 1), (3, 2)]
+        self.env.agents[agent_id].status = "random"
+        if learning_flag:
+            self.env.render_mode = "rgb_array"
+            #print("qaaaaaaa self.env.agents", self.env.agents)
+            rewards = self.special_training_function()
+            self.cache_tables(cache_dir="cache/2b")
+            self.build_plot(rewards)
+            print("Episode finished!")
+        if testing_flag:
+            agents_to_test = ["patron_0"]
+            self.load_tables(agents_to_load = agents_to_test, cache_dir="cache/2b")
+            for agent_id in agents_to_test:
+                self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
+            self.env.render_mode = "human"
+            total_reward = 0
+            for episode in range(10):
+                total_reward, steps = self.run_simulation_step(total_reward, learning_flag=False)
+                print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
+            self.env.close()
+    
+    def Scenary_2c(
+            self,
+            learning_flag: bool = True,
+            testing_flag: bool = True
+    ):
+        walls_positions=set([(1, 0), (1, 1), (4, 1)])
+        doors_positions={}
+        length_of_grid = 5
+        height_of_grid = 3
+        self.env = WorldEnv(size_x=length_of_grid,
+                            size_y=height_of_grid,
+                            target_location=(4, 0),
+                            walls_positions=walls_positions,
+                            doors_positions=doors_positions,
+                            render_mode=None
+                        )
+        agent_id = "patron_0"
+        self.env.agents[agent_id] = Patron(self.env.action_space())
+        self.env.agents[agent_id].start_zone = [(0, 0), (0, 1), (0, 2)]
+        self.env.agents[agent_id].status = "trained"
+        self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
+        self.load_tables(agents_to_load = ["patron_0"], cache_dir="cache/2b")
+        agent_id = "altruist_0"
+        self.env.agents[agent_id] = Altruist(self.env.action_space())
+        self.env.agents[agent_id].start_zone = [(2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]
+        self.env.agents[agent_id].status = "training"
+
+        self.env.agents[agent_id].states_of_env["walls_positions"] = walls_positions
+        self.env.agents[agent_id].states_of_env["doors_positions"] = doors_positions
+        self.env.agents[agent_id].states_of_env["length_of_grid"] = length_of_grid
+        self.env.agents[agent_id].states_of_env["height_of_grid"] = height_of_grid
+
+        if learning_flag:
+            self.env.render_mode = "rgb_array"
+            rewards = self.special_training_function()
+            self.cache_tables(cache_dir="cache/2c")
+            self.build_plot(rewards)
+            print("Episode finished!")
+        if testing_flag:
+            agents_to_test = ["patron_0", "altruist_0"]
+            self.load_tables(agents_to_load = agents_to_test, cache_dir="cache/2c")
+            for agent_id in agents_to_test:
+                self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
+
+            self.env.render_mode = "human"
+            total_reward = 0
+            for episode in range(10):
+                total_reward, steps = self.run_simulation_step(total_reward, learning_flag=False)
+                print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
+            self.env.close()
+
+    def Scenary_3a(
+            self,
+            learning_flag: bool = True,
+            testing_flag: bool = True
+    ):
+        self.env = WorldEnv(size_x=5,
+                            size_y=3,
+                            target_location=(4, 0),
+                            walls_positions=set([(1, 0), (1, 1), (4, 1)]),
+                            doors_positions={(1, 2): (3, 1)},
+                            render_mode=None
+                        )
+        agent_id = "patron_0"
+        self.env.agents[agent_id] = Patron(self.env.action_space())
+        self.env.agents[agent_id].start_zone = [(0, 0), (0, 1), (0, 2)]
+        self.env.agents[agent_id].status = "training"
+        agent_id = "altruist_0"
+        self.env.agents[agent_id] = Altruist(self.env.action_space())
+        self.env.agents[agent_id].start_zone = [(2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]
+        self.env.agents[agent_id].status = "random"
+        if learning_flag:
+            self.env.render_mode = "rgb_array"
+            rewards = self.special_training_function()
+            self.cache_tables(cache_dir="cache/3a")
+            self.build_plot(rewards)
+            print("Episode finished!")
+        if testing_flag:
+            agents_to_test = ["patron_0"]
+            self.load_tables(agents_to_load = agents_to_test, cache_dir="cache/3a")
+            for agent_id in agents_to_test:
+                self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
+            self.env.render_mode = "human"
+            total_reward = 0
+            for episode in range(10):
+                total_reward, steps = self.run_simulation_step(total_reward, learning_flag=False)
+                print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
+            self.env.close()
+
+    def Scenary_3b(
+            self,
+            learning_flag: bool = True,
+            testing_flag: bool = True
+    ):
+        walls_positions=set([(1, 0), (1, 1), (4, 1)])
+        doors_positions={(1, 2): (3, 1)}
+        length_of_grid = 5
+        height_of_grid = 3
+        self.env = WorldEnv(size_x=length_of_grid,
+                            size_y=height_of_grid,
+                            target_location=(4, 0),
+                            walls_positions=walls_positions,
+                            doors_positions=doors_positions,
+                            render_mode=None
+                        )
+        agent_id = "patron_0"
+        self.env.agents[agent_id] = Patron(self.env.action_space())
+        self.env.agents[agent_id].start_zone = [(0, 0), (0, 1), (0, 2)]
+        self.env.agents[agent_id].status = "trained"
+        self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
+        self.load_tables(agents_to_load = ["patron_0"], cache_dir="cache/3a")
+        agent_id = "altruist_0"
+        self.env.agents[agent_id] = Altruist(self.env.action_space())
+        self.env.agents[agent_id].start_zone = [(2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]
+        self.env.agents[agent_id].status = "training"
+
+        self.env.agents[agent_id].states_of_env["walls_positions"] = walls_positions
+        self.env.agents[agent_id].states_of_env["doors_positions"] = doors_positions
+        self.env.agents[agent_id].states_of_env["length_of_grid"] = length_of_grid
+        self.env.agents[agent_id].states_of_env["height_of_grid"] = height_of_grid
+
+        if learning_flag:
+            self.env.render_mode = "rgb_array"
+            rewards = self.special_training_function()
+            self.cache_tables(cache_dir="cache/3b")
+            self.build_plot(rewards)
+            print("Episode finished!")
+        if testing_flag:
+            agents_to_test = ["patron_0", "altruist_0"]
+            self.load_tables(agents_to_load = agents_to_test, cache_dir="cache/3b")
+            for agent_id in agents_to_test:
+                self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
+            self.env.render_mode = "human"
+            total_reward = 0
+            for episode in range(10):
+                total_reward, steps = self.run_simulation_step(total_reward, learning_flag=False)
+                print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
+            self.env.close()
+
+    def Scenary_4a(
+            self,
+            learning_flag: bool = True,
+            testing_flag: bool = True
+    ):
+        self.env = WorldEnv(size_x=7,
+                            size_y=3,
+                            target_location=(4, 0),
+                            walls_positions=set([(1, 0), (1, 1), (4, 1), (5, 0)]),
+                            doors_positions={(1, 2): (3, 1), (4, 2): (3, 0)},
+                            render_mode=None
+                        )
+        agent_id = "patron_0"
+        self.env.agents[agent_id] = Patron(self.env.action_space())
+        self.env.agents[agent_id].start_zone = [(0, 0), (0, 1), (0, 2)]
+        self.env.agents[agent_id].status = "training"
+        if learning_flag:
+            self.env.render_mode = "rgb_array"
+            rewards = self.special_training_function()
+            self.cache_tables(cache_dir="cache/4a")
+            self.build_plot(rewards)
+            print("Episode finished!")
+        if testing_flag:
+            agents_to_test = ["patron_0"]
+            self.load_tables(agents_to_load = agents_to_test, cache_dir="cache/4a")
+            for agent_id in agents_to_test:
+                self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
+            self.env.render_mode = "human"
+            total_reward = 0
+            for episode in range(10):
+                total_reward, steps = self.run_simulation_step(total_reward, learning_flag=False)
+                print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
+            self.env.close()
+
+    def Scenary_4b(
+            self,
+            learning_flag: bool = True,
+            testing_flag: bool = True
+    ):
+        self.env = WorldEnv(size_x=7,
+                            size_y=3,
+                            target_location=(4, 0),
+                            walls_positions=set([(1, 0), (1, 1), (4, 1), (5, 0)]),
+                            doors_positions={(1, 2): (3, 1), (4, 2): (3, 0)},
+                            render_mode=None
+                        )
+        agent_id = "patron_0"
+        self.env.agents[agent_id] = Patron(self.env.action_space())
+        self.env.agents[agent_id].start_zone = [(0, 0), (0, 1), (0, 2)]
+        self.env.agents[agent_id].status = "training"
+        agent_id = "altruist_0"
+        self.env.agents[agent_id] = Altruist(self.env.action_space())
+        self.env.agents[agent_id].start_zone = [(2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]
+        self.env.agents[agent_id].status = "random"
+        if learning_flag:
+            self.env.render_mode = "rgb_array"
+            rewards = self.special_training_function()
+            self.cache_tables(cache_dir="cache/4b")
+            self.build_plot(rewards)
+            print("Episode finished!")
+        if testing_flag:
+            agents_to_test = ["patron_0"]
+            self.load_tables(agents_to_load = agents_to_test, cache_dir="cache/4b")
+            for agent_id in agents_to_test:
+                self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
+            self.env.render_mode = "human"
+            total_reward = 0
+            for episode in range(10):
+                total_reward, steps = self.run_simulation_step(total_reward, learning_flag=False)
+                print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
+            self.env.close()
+
+    def Scenary_4c(
+            self,
+            learning_flag: bool = True,
+            testing_flag: bool = True
+    ):
+        walls_positions=set([(1, 0), (1, 1), (4, 1), (5, 0)])
+        doors_positions={(1, 2): (3, 1), (4, 2): (3, 0)}
+        length_of_grid = 7
+        height_of_grid = 3
+        self.env = WorldEnv(size_x=length_of_grid,
+                            size_y=height_of_grid,
+                            target_location=(4, 0),
+                            walls_positions=walls_positions,
+                            doors_positions=doors_positions,
+                            render_mode=None
+                        )
+        agent_id = "patron_0"
+        self.env.agents[agent_id] = Patron(self.env.action_space())
+        self.env.agents[agent_id].start_zone = [(0, 0), (0, 1), (0, 2)]
+        self.env.agents[agent_id].status = "trained"
+        self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
+        self.load_tables(agents_to_load = ["patron_0"], cache_dir="cache/4b")
+        agent_id = "altruist_0"
+        self.env.agents[agent_id] = Altruist(self.env.action_space())
+        self.env.agents[agent_id].start_zone = [(2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]
+        self.env.agents[agent_id].status = "training"
+
+        self.env.agents[agent_id].states_of_env["walls_positions"] = walls_positions
+        self.env.agents[agent_id].states_of_env["doors_positions"] = doors_positions
+        self.env.agents[agent_id].states_of_env["length_of_grid"] = length_of_grid
+        self.env.agents[agent_id].states_of_env["height_of_grid"] = height_of_grid
+
+        if learning_flag:
+            self.env.render_mode = "rgb_array"
+            rewards = self.special_training_function()
+            self.cache_tables(cache_dir="cache/4c")
+            self.build_plot(rewards)
+            print("Episode finished!")
+        if testing_flag:
+            agents_to_test = ["patron_0", "altruist_0"]
+            self.load_tables(agents_to_load = agents_to_test, cache_dir="cache/4c")
+            for agent_id in agents_to_test:
+                self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
+            self.env.render_mode = "human"
+            total_reward = 0
+            for episode in range(10):
+                total_reward, steps = self.run_simulation_step(total_reward, learning_flag=False)
+                print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
+            self.env.close()
+
+    def special_training_function(self, num_episodes = 300000):
         rewards = []
-
-        # Инициализация среды и агентов
-        self.init_environment_and_agents(render_mode)
-
-        # Запуск цикла обучения
+        #print("self.env.agents", self.env.agents)
         for episode in range(num_episodes):
-            total_reward, steps = self.run_simulation_step(learning_flag=True)
+            total_reward, steps = self.run_simulation_step(total_reward=0, learning_flag=True)
+            # print(self.env.agents["patron_0"].q_table)
             rewards.append(steps)
             print(f"Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
-        self.cache_tables()
-        # self.build_plot(rewards)
-
-        print("Episode finished!")
-
         self.env.close()
-
-    def init_environment_and_agents(self, render_mode):
-        env_size_x, env_size_y, env_agent_patron_start_zone, env_agent_altruist_start_zone, env_target_location, env_walls_positions, env_doors_positions = Map_Creation().select_scenary(self.map_type)
-        self.env = WorldEnv(env_size_x,
-                            env_size_y,
-                            env_target_location,
-                            env_walls_positions,
-                            env_doors_positions,
-                            render_mode=render_mode
-                        )
-        self.add_agents(env_agent_patron_start_zone, env_agent_altruist_start_zone)
-
-    def add_agents(self, env_agent_patron_start_zone, env_agent_altruist_start_zone, patron_num=1, altruist_num=1):
-        # переписать без циклового вызова методов add_agents и env
-        for counter in range(patron_num):
-            self.env.agents[f"patron_{counter}"] = Patron(self.env.action_space())
-            self.env.agents[f"patron_{counter}"].start_zone = env_agent_patron_start_zone
-
-        for counter in range(altruist_num):
-            self.env.agents[f"altruist_{counter}"] = Altruist(self.env.action_space())
-            self.env.agents[f"altruist_{counter}"].start_zone = env_agent_altruist_start_zone
-
-    def show_trained_behavior(
-            self,
-            patron_num: int = 1,
-            altruist_num: int = 1,
-            render_mode: str = "human",
-            num_episodes: int = 10
-    ):
-        # Устанавливаем epsilon на минимальное значение и переводим в режим наблюдения
-        self.init_environment_and_agents(render_mode)
-        for agent_id, agent_instance in self.env.agents.items():
-            agent_instance.epsilon = 0.01
-        # Запускаем агента для тестирования его поведения
-        for episode in range(num_episodes):
-            total_reward, steps = self.run_simulation_step(learning_flag=False)
-            print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
-        self.env.close()
+        return rewards
 
     def run_simulation_step(
             self,
-            learning_flag: bool,
-            steps: int = 0,
-            total_reward: int = 0,
-            action: dict = {},
-            possible_actions: int = 800,
-            done=False):
+            total_reward: int,
+            learning_flag: bool = False,
+            possible_actions: int = 100,
+            ):
         state, _ = self.env.reset()
-        state_tupled = tuple(state.values())
-        while possible_actions > 0 and not done:
+
+        #print("self.env.agents", self.env.agents)
+        if "altruist_0" in self.env.agents.keys():
+            #print("has")
+            if self.env.agents["altruist_0"].status == "training":
+                altruist_instance = self.env.agents["altruist_0"]
+                altruist_instance.time = 0
+                altruist_instance.states_of_env[altruist_instance.time] = {}
+                #print("state", state["patron_0"], state["altruist_0"])
+                altruist_instance.states_of_env[altruist_instance.time]["patron_position"] = state["patron_0"]
+                altruist_instance.states_of_env[altruist_instance.time]["altruist_position"] = state["altruist_0"]
+
+        steps = 0
+        action = {}
+        done=False
+        while possible_actions>0 and not done:
             steps += 1
             for agent_id, agent_instance in self.env.agents.items():
-                old_agent_location = agent_instance.location
-                action[agent_id] = agent_instance.select_action(state_tupled)
+                action[agent_id] = agent_instance.select_action(state[agent_id])
             next_state, reward, done, _, _ = self.env.step(action)
             if learning_flag:
                 for agent_id, agent_instance in self.env.agents.items():
-                    agent_instance.update_q(state[agent_id], action[agent_id], reward, next_state[agent_id])
-                    agent_instance.decay_epsilon()
+                    # print(state[agent_id], action[agent_id], reward, next_state[agent_id])
+
+                    # change this shit!!!!!
+                    if agent_id[:-1] == "altruist_":
+                        agent_instance.states_of_env[agent_instance.time] = {}
+                        agent_instance.states_of_env[agent_instance.time]["patron_position"] = next_state["patron_0"]
+                        agent_instance.states_of_env[agent_instance.time]["altruist_position"] = next_state["altruist_0"]
+                    if agent_instance.status == "training":
+                        agent_instance.update_q(state[agent_id], action[agent_id], reward, next_state[agent_id])
+
             state = next_state
             total_reward += reward
             possible_actions -= 1
             self.env.render()
+        if learning_flag:
+            for agent_instance in self.env.agents.values():
+                agent_instance.decay_epsilon()
         return total_reward, steps
 
     def cache_tables(self, cache_dir: str = "cache", try_dir_base: str = "progon_"):
@@ -129,21 +494,12 @@ class SimulationManager:
         new_folder = os.path.join(cache_dir, f"{try_dir_base}{max_i + 1}")
         os.makedirs(new_folder)
         for agent_id, agent_instance in self.env.agents.items():
-            table_agent_path = os.path.join(new_folder, f"table_{agent_id}.json")
-            table = self.serialize_keys(agent_instance.q_table)
-            print(agent_id, table)
-            with open(table_agent_path, 'w') as f1:
-                json.dump(table, f1)
+            table_agent_path = os.path.join(new_folder, f"table_{agent_id}.pkl")
+            with open(table_agent_path, 'wb') as f:
+                pickle.dump(agent_instance.q_table, f)  # Сохраняем Q-таблицы с помощью pickle
         print(f"Q-таблицы сохранены в {new_folder}")
-        
-    def serialize_keys(self, table):
-        new_table = {}
-        for key, value in table.items():
-            str_key = str(key)
-            new_table[str_key] = value
-        return new_table
 
-    def load_tables(self, progon_number: int = None, cache_dir: str = "cache", try_dir_base: str = "progon_"):
+    def load_tables(self, agents_to_load: List, progon_number: int = None, cache_dir: str = "cache", try_dir_base: str = "progon_"):
         if progon_number is None:
             existing_folders = [f for f in os.listdir(cache_dir) if
                                 f.startswith(try_dir_base) and os.path.isdir(os.path.join(cache_dir, f))]
@@ -152,39 +508,27 @@ class SimulationManager:
                 progon_number = max_i
             else:
                 raise ValueError("Нет сохранённых прогонов для загрузки.")
-
         progon_folder = os.path.join(cache_dir, f"{try_dir_base}{progon_number}")
         if not os.path.exists(progon_folder):
             raise ValueError(f"Попытка {progon_number} не существует.")
+        for agent_id in agents_to_load:
+            file_path = os.path.join(progon_folder, f"table_{agent_id}.pkl")
+            if os.path.exists(file_path):
+                with open(file_path, 'rb') as f:
+                    self.env.agents[agent_id].q_table = pickle.load(f)  # Загружаем Q-таблицы с помощью pickle
+            else:
+                print(f"Файл с agent_id {agent_id} не найден.")
+        print(f"Таблицы успешно загружены из {progon_folder}")
 
-    # def load_tables(self, progon_number: int, cache_dir: str = "cache", try_dir_base: str = "progon_"):
-    #     progon_folder = os.path.join(cache_dir, f"{try_dir_base}{progon_number}")
-    #     if not os.path.exists(progon_folder):
-    #         raise ValueError(f"Попытка {progon_number} не существует.")
-    #     table_patron_path = os.path.join(progon_folder, "table_patron.json")
-    #     table_altruist_path = os.path.join(progon_folder, "table_altruist.json")
-    #     if not os.path.exists(table_patron_path) or not os.path.exists(table_altruist_path):
-    #         raise ValueError(f"Файлы table_1.json и/или table_2.json не найдены в папке {progon_folder}.")
-    #     # Загружаем table_1
-    #     with open(table_patron_path, 'r') as f1:
-    #         self.agent_patron.q_table = json.load(f1)
-    #     # Загружаем table_2
-    #     with open(table_altruist_path, 'r') as f2:
-    #         self.agent_altruist.q_table = json.load(f2)
-    #     print(f"Таблицы успешно загружены из {progon_folder}")
 
-    # def build_plot(self, rewards: List):
-    #     plt.plot(rewards)
-    #     plt.xlabel('Episode')
-    #     plt.ylabel('Total Steps')
-    #     plt.title('Learning Progress')
-    #     plt.show()
 
-#
-#
-#
-# Блок в котором определяется поведение скрипта
-# (по умолчанию при вызове напрямую агенты и обучаются и тестируют, агрументами вызова это можно поменять)
+    def build_plot(self, rewards: List):
+        plt.plot(rewards)
+        plt.xlabel('Episode')
+        plt.ylabel('Total Steps')
+        plt.title('Learning Progress')
+        plt.show()
+
 if __name__ == "__main__":
     import sys  # Это для обработки аргументов командной строки
 
@@ -194,9 +538,32 @@ if __name__ == "__main__":
 
     # можно передать из командной строки агрументы no_learn или no_test и тогда будет что-то одно
     # ПЕРЕПИСАТЬ НА ЛОГИКУ КОНЕЧНОГО ПОЛЬЗОВАТЕЛЯ ***
+    map_type = "11"
     if "no_learn" in sys.argv:
         learning_needed = False
     if "no_test" in sys.argv:
         testing_needed = False
-    SimulationManager(map_type=3).run_simulation(learning_flag=learning_needed, testing_flag=testing_needed)
-
+    for arg in sys.argv:
+        if arg.startswith("map_type"):
+            map_type=arg.split("=")[1]
+    match map_type:
+        case "1a":
+            SimulationManager().Scenary_1a(learning_flag=learning_needed, testing_flag=testing_needed)
+        case "1b":
+            SimulationManager().Scenary_1b(learning_flag=learning_needed, testing_flag=testing_needed)
+        case "2a":
+            SimulationManager().Scenary_2a(learning_flag=learning_needed, testing_flag=testing_needed)
+        case "2b":
+            SimulationManager().Scenary_2b(learning_flag=learning_needed, testing_flag=testing_needed)
+        case "2c":
+            SimulationManager().Scenary_2c(learning_flag=learning_needed, testing_flag=testing_needed)
+        case "3a":
+            SimulationManager().Scenary_3a(learning_flag=learning_needed, testing_flag=testing_needed)
+        case "3b":
+            SimulationManager().Scenary_3b(learning_flag=learning_needed, testing_flag=testing_needed)
+        case "4a":
+            SimulationManager().Scenary_4a(learning_flag=learning_needed, testing_flag=testing_needed)
+        case "4b":
+            SimulationManager().Scenary_4b(learning_flag=learning_needed, testing_flag=testing_needed)
+        case "4c":
+            SimulationManager().Scenary_4c(learning_flag=learning_needed, testing_flag=testing_needed)
