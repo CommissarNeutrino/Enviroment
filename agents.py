@@ -102,15 +102,13 @@ class Altruist(BaseAgent):
             0: np.array([0, -1]),
             1: np.array([1, 0]),
             2: np.array([0, 1]),
-            3: np.array([-1, 0]),
-            4: np.array([0, 0]),
+            3: np.array([-1, 0])
         }
         self._direction_to_action = {
             (0, -1) : 0,
             (1, 0) : 1,
             (0, 1) : 2,
-            (-1, 0) : 3,
-            (0, 0) : 4
+            (-1, 0) : 3
         }
         self.decay_coefficient = decay_coefficient
         self.states_of_env = {}
@@ -157,9 +155,8 @@ class Altruist(BaseAgent):
 
         # change state
         state = self.states_of_env[self.time - self.time_horizon]["altruist_position"]
-        action = np.array(self.states_of_env[self.time - self.time_horizon + 1]["altruist_position"]) - np.array(state)
+        action_id = self.states_of_env[self.time - self.time_horizon]["altruist_action"]
         #print(action)
-        action_id = self._direction_to_action[tuple(action)]
         #print("change state in update_q", state, action)
         new_q = self.get_q(state, action_id) + self.alpha * score
         #print("score", score)
