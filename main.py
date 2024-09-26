@@ -465,7 +465,7 @@ class SimulationManager:
                     # print(state[agent_id], action[agent_id], reward, next_state[agent_id])
 
                     # change this shit!!!!!
-                    if agent_id[:-1] == "altruist_":
+                    if agent_id[:-1] == "altruist_" and self.env.agents["altruist_0"].status == "training":
                         agent_instance.states_of_env[agent_instance.time] = {}
                         agent_instance.states_of_env[agent_instance.time]["patron_position"] = next_state["patron_0"]
                         agent_instance.states_of_env[agent_instance.time]["altruist_position"] = next_state["altruist_0"]

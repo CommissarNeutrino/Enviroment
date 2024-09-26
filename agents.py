@@ -95,6 +95,7 @@ class Altruist(BaseAgent):
         self.epsilon_decay = epsilon_decay
         self.min_epsilon = min_epsilon
         self.key = False
+        self.negative_reward = 0.1
 
         self.time = 0
         self.time_horizon = time_horizon
@@ -156,9 +157,10 @@ class Altruist(BaseAgent):
         # change state
         state = self.states_of_env[self.time - self.time_horizon]["altruist_position"]
         action_id = self.states_of_env[self.time - self.time_horizon]["altruist_action"]
-        #print(action)
-        #print("change state in update_q", state, action)
-        new_q = self.get_q(state, action_id) + self.alpha * score
+        if self._allowed_step(state, self._action_to_direction[action_id]):
+            new_q = self.get_q(state, action_id) + self.alpha * score
+        else:
+            new_q = self.get_q(state, action_id) - self.alpha * self.negative_reward
         #print("score", score)
         self.q_table[(state, action_id)] = new_q
 
