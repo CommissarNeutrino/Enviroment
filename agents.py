@@ -1,5 +1,6 @@
 import numpy as np
 from typing import Tuple
+import random
 
 
 class BaseAgent:
@@ -30,8 +31,8 @@ class Patron(BaseAgent):
             alpha=0.1,
             gamma=0.99,
             epsilon=1.0,
-            epsilon_decay=0.995,
-            min_epsilon=0.0,
+            epsilon_decay=0.95,
+            min_epsilon=0.01,
             **kwargs
     ):
         super().__init__(**kwargs)
@@ -69,6 +70,8 @@ class Patron(BaseAgent):
         self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
 
 
+
+
 class Altruist(BaseAgent):
     def __init__(
             self,
@@ -99,8 +102,13 @@ class Altruist(BaseAgent):
             0: np.array([0, -1]),
             1: np.array([1, 0]),
             2: np.array([0, 1]),
-            3: np.array([-1, 0]),
-            4: np.array([0, 0]),
+            3: np.array([-1, 0])
+        }
+        self._direction_to_action = {
+            (0, -1) : 0,
+            (1, 0) : 1,
+            (0, 1) : 2,
+            (-1, 0) : 3
         }
         self.decay_coefficient = decay_coefficient
         self.states_of_env = {}
@@ -111,7 +119,7 @@ class Altruist(BaseAgent):
 
     def get_q(self, state, action):
         #print("in get_q", state, action)
-        return self.q_table.get((state, tuple(action)), 0.0)
+        return self.q_table.get((state, action), 0.0)
 
     def update_q(self, state, action, reward, next_state):
         all_actions = range(self.action_space.n)
@@ -123,15 +131,15 @@ class Altruist(BaseAgent):
         score = 0
         exp = 1
         self.score_time = self.time - self.time_horizon
-        print("126", self.score_time, self.time,  self.time_horizon)
+        #print("126", self.score_time, self.time,  self.time_horizon)
         if self.score_time < 0:
             return
         #print("tiles", self.states_of_env[self.score_time]["patron_position"])
         reachable_tiles = [self.states_of_env[self.score_time]["patron_position"]]
-        print("131", self.states_of_env[self.score_time]["patron_position"])
+        #print("131", self.states_of_env[self.score_time]["patron_position"])
 
         while(self.score_time < self.time):
-            print("134", self.score_time)
+            #print("134", self.score_time)
             next_tiles = set()
             for tile in reachable_tiles:
                 #print("tile", tile)
@@ -147,24 +155,25 @@ class Altruist(BaseAgent):
 
         # change state
         state = self.states_of_env[self.time - self.time_horizon]["altruist_position"]
-        action = np.array(self.states_of_env[self.time - self.time_horizon + 1]["altruist_position"]) - np.array(state)
+        action_id = self.states_of_env[self.time - self.time_horizon]["altruist_action"]
+        #print(action)
         #print("change state in update_q", state, action)
-        new_q = self.get_q(state, tuple(action)) + self.alpha * score
-        print("score", score)
-        self.q_table[(state, tuple(action))] = new_q
+        new_q = self.get_q(state, action_id) + self.alpha * score
+        #print("score", score)
+        self.q_table[(state, action_id)] = new_q
 
     def select_action(self, agent_location):
         self.time += 1
         match self.status:
             case "random":
                 #return self.action_space.sample()
-                return 0
+                return self.action_space.sample()
             case "training":
                 if np.random.rand() < self.epsilon:
                     return self.action_space.sample()  # Exploration
                 else:
                     all_actions = range(self.action_space.n)
-                    return max(all_actions, key=lambda a: self.get_q(agent_location, self._action_to_direction[a]))  # Exploitation
+                    return max(all_actions, key=lambda a: self.get_q(agent_location, a))  # Exploitation
             case _:
                 return self.action_space.sample()
 

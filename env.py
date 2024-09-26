@@ -30,8 +30,7 @@ class WorldEnv(gym.Env):
             0: np.array([0, -1]),
             1: np.array([1, 0]),
             2: np.array([0, 1]),
-            3: np.array([-1, 0]),
-            4: np.array([0, 0]),
+            3: np.array([-1, 0])
         }
 
     def _get_obs(self):
@@ -44,8 +43,7 @@ class WorldEnv(gym.Env):
         super().reset(seed=seed)
         for agent_id, agent_instance in self.agents.items():
             agent_instance.location = random.choice(agent_instance.start_zone)
-            if agent_id == "patron_0":
-                print("agent_instance.location", agent_instance.location)
+            print("agent_instance.location", agent_id, agent_instance.location)
         observation = self._get_obs()
         info = _get_info()
         return observation, info
@@ -64,7 +62,7 @@ class WorldEnv(gym.Env):
         agent_instance.location = self.patron_decision_process(agent_instance, direction)
         if np.array_equal(agent_instance.location, self.target_location):
             terminated = True
-        reward = 1 if terminated else 0
+        reward = 1 if terminated else -0.1
         observation = self._get_obs()
         info = _get_info()
         return observation, reward, terminated, False, info
@@ -142,4 +140,4 @@ class WorldEnv(gym.Env):
 
     @functools.lru_cache(maxsize=None)
     def action_space(self):
-        return spaces.Discrete(5)
+        return spaces.Discrete(4)

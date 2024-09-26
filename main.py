@@ -422,7 +422,7 @@ class SimulationManager:
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
-    def special_training_function(self, num_episodes = 300000):
+    def special_training_function(self, num_episodes = 30000):
         rewards = []
         #print("self.env.agents", self.env.agents)
         for episode in range(num_episodes):
@@ -437,7 +437,7 @@ class SimulationManager:
             self,
             total_reward: int,
             learning_flag: bool = False,
-            possible_actions: int = 100,
+            possible_actions: int = 200,
             ):
         state, _ = self.env.reset()
 
@@ -469,6 +469,8 @@ class SimulationManager:
                         agent_instance.states_of_env[agent_instance.time] = {}
                         agent_instance.states_of_env[agent_instance.time]["patron_position"] = next_state["patron_0"]
                         agent_instance.states_of_env[agent_instance.time]["altruist_position"] = next_state["altruist_0"]
+                        agent_instance.states_of_env[agent_instance.time - 1]["patron_action"] = action["patron_0"]
+                        agent_instance.states_of_env[agent_instance.time - 1]["altruist_action"] = action["altruist_0"]
                     if agent_instance.status == "training":
                         agent_instance.update_q(state[agent_id], action[agent_id], reward, next_state[agent_id])
 
