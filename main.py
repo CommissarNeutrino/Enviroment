@@ -4,8 +4,6 @@ import matplotlib.pyplot as plt
 from typing import List
 from agents import Patron, Altruist  # берем классы агентов из соседнего файла
 from env import WorldEnv  # берем класс среды из соседнего файла
-from map_creation import Map_Creation
-from training import Training_Manager
 
 # Технический долг: посмотреть как реализуется action space в гимназиум по-нормальному?
 
