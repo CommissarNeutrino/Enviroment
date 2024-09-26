@@ -107,14 +107,13 @@ class WorldEnv(gym.Env):
                 return False
         return True
     
-    def render(self):
+    def render(self, step_number, episod_number):
         if self.render_mode == "human":
             # Отрисовываем только при вызове этого метода
-            self.renderer.render(self.agents.values(), self.target_location, self.walls_positions, self.doors_positions)
+            self.renderer.render(self.agents.values(), self.target_location, self.walls_positions, self.doors_positions, step_number, episod_number)
 
     def close(self):
-        if self.render_mode == "human":
-            self.renderer.close()
+        self.renderer.close()
     
     @property
     def render_mode(self):

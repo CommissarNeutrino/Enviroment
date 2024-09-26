@@ -1,0 +1,7 @@
+requirments.txt
+__pycache__
+__pycache__/*
+*.pyc
+.idea
+/video/frames/*
+/cache/*
