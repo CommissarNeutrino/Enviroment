@@ -20,6 +20,7 @@ class SimulationManager:
     ):
         self.env = WorldEnv(size_x=5,
                             size_y=3,
+                            scenary_type="1a",
                             target_location=(4, 0),
                             walls_positions=set(),
                             doors_positions={},
@@ -54,6 +55,7 @@ class SimulationManager:
     ):
         self.env = WorldEnv(size_x=5,
                             size_y=3,
+                            scenary_type="1b",
                             target_location=(4, 0),
                             walls_positions=set(),
                             doors_positions={},
@@ -92,6 +94,7 @@ class SimulationManager:
     ):
         self.env = WorldEnv(size_x=5,
                             size_y=3,
+                            scenary_type="2a",
                             target_location=(4, 0),
                             walls_positions=set([(1, 0), (1, 1), (4, 1)]),
                             doors_positions={},
@@ -130,6 +133,7 @@ class SimulationManager:
         height_of_grid = 3
         self.env = WorldEnv(size_x=length_of_grid,
                             size_y=height_of_grid,
+                            scenary_type="2b",
                             target_location=(4, 0),
                             walls_positions=walls_positions,
                             doors_positions=doors_positions,
@@ -174,6 +178,7 @@ class SimulationManager:
         height_of_grid = 3
         self.env = WorldEnv(size_x=length_of_grid,
                             size_y=height_of_grid,
+                            scenary_type="2c",
                             target_location=(4, 0),
                             walls_positions=walls_positions,
                             doors_positions=doors_positions,
@@ -221,6 +226,7 @@ class SimulationManager:
     ):
         self.env = WorldEnv(size_x=5,
                             size_y=3,
+                            scenary_type = "3a",
                             target_location=(4, 0),
                             walls_positions=set([(1, 0), (1, 1), (4, 1)]),
                             doors_positions={(1, 2): (3, 1)},
@@ -263,6 +269,7 @@ class SimulationManager:
         height_of_grid = 3
         self.env = WorldEnv(size_x=length_of_grid,
                             size_y=height_of_grid,
+                            scenary_type="3b",
                             target_location=(4, 0),
                             walls_positions=walls_positions,
                             doors_positions=doors_positions,
@@ -309,6 +316,7 @@ class SimulationManager:
     ):
         self.env = WorldEnv(size_x=7,
                             size_y=3,
+                            scenary_type="4a",
                             target_location=(4, 0),
                             walls_positions=set([(1, 0), (1, 1), (4, 1), (5, 0)]),
                             doors_positions={(1, 2): (3, 1), (4, 2): (3, 0)},
@@ -343,6 +351,7 @@ class SimulationManager:
     ):
         self.env = WorldEnv(size_x=7,
                             size_y=3,
+                            scenary_type="4b",
                             target_location=(4, 0),
                             walls_positions=set([(1, 0), (1, 1), (4, 1), (5, 0)]),
                             doors_positions={(1, 2): (3, 1), (4, 2): (3, 0)},
@@ -385,6 +394,7 @@ class SimulationManager:
         height_of_grid = 3
         self.env = WorldEnv(size_x=length_of_grid,
                             size_y=height_of_grid,
+                            scenary_type = "4c",
                             target_location=(4, 0),
                             walls_positions=walls_positions,
                             doors_positions=doors_positions,
@@ -424,7 +434,7 @@ class SimulationManager:
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
-    def special_training_function(self, num_episodes = 300000):
+    def special_training_function(self, num_episodes = 3000):
         rewards = []
         #print("self.env.agents", self.env.agents)
         for episode in range(num_episodes):
@@ -538,7 +548,7 @@ if __name__ == "__main__":
 
     # можно передать из командной строки агрументы no_learn или no_test и тогда будет что-то одно
     # ПЕРЕПИСАТЬ НА ЛОГИКУ КОНЕЧНОГО ПОЛЬЗОВАТЕЛЯ ***
-    map_type = "2c"
+    map_type = "4b"
     if "no_learn" in sys.argv:
         learning_needed = False
     if "no_test" in sys.argv:
