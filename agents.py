@@ -85,7 +85,6 @@ class Altruist(BaseAgent):
             time_horizon = 3,
             **kwargs
     ):
-        print("action_space", action_space)
         super().__init__(**kwargs)
         self.q_table = {}
         self.action_space = action_space
@@ -94,8 +93,8 @@ class Altruist(BaseAgent):
         self.epsilon = epsilon  # Exploration rate
         self.epsilon_decay = epsilon_decay
         self.min_epsilon = min_epsilon
-        self.key = False
         self.negative_reward = 0.1
+        self.alpha_changing = alpha
 
         self.time = 0
         self.time_horizon = time_horizon
@@ -117,35 +116,21 @@ class Altruist(BaseAgent):
         self.decay_epsilon_counter = 0
         
 
-
     def get_q(self, state, action):
-        #print("in get_q", state, action)
         return self.q_table.get((state, action), 0.0)
 
     def update_q(self, state, action, reward, next_state):
         all_actions = range(self.action_space.n)
-        # best_next_action = max(all_actions, key=lambda a: self.get_q(next_state, a))
-        # td_target = reward + self.gamma * self.get_q(next_state, best_next_action)
-        # td_error = td_target - self.get_q(state, action)
-        # new_q = self.get_q(state, action) + self.alpha * td_error
-        # self.q_table[(state, action)] = new_q
         score = 0
         exp = 1
         self.score_time = self.time - self.time_horizon
-        #print("126", self.score_time, self.time,  self.time_horizon)
         if self.score_time < 0:
             return
-        #print("tiles", self.states_of_env[self.score_time]["patron_position"])
         reachable_tiles = [self.states_of_env[self.score_time]["patron_position"]]
-        #print("131", self.states_of_env[self.score_time]["patron_position"])
-
         while(self.score_time < self.time):
-            #print("134", self.score_time)
             next_tiles = set()
             for tile in reachable_tiles:
-                #print("tile", tile)
-                for direction in self._action_to_direction.values(): #??
-                    #todo
+                for direction in self._action_to_direction.values():
                     if self._allowed_step(tile, direction):
                         next_tiles.add(tuple(direction + tile))
                     
@@ -154,14 +139,12 @@ class Altruist(BaseAgent):
             exp = exp * self.decay_coefficient
             reachable_tiles = list(next_tiles)
 
-        # change state
         state = self.states_of_env[self.time - self.time_horizon]["altruist_position"]
         action_id = self.states_of_env[self.time - self.time_horizon]["altruist_action"]
         if self._allowed_step(state, self._action_to_direction[action_id]):
-            new_q = self.get_q(state, action_id) + self.alpha * score
+            new_q = self.get_q(state, action_id) + self.alpha_changing * score
         else:
             new_q = self.get_q(state, action_id) - self.alpha * self.negative_reward
-        #print("score", score)
         self.q_table[(state, action_id)] = new_q
 
     def select_action(self, agent_location):

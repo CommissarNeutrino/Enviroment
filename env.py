@@ -43,7 +43,6 @@ class WorldEnv(gym.Env):
         super().reset(seed=seed)
         for agent_id, agent_instance in self.agents.items():
             agent_instance.location = random.choice(agent_instance.start_zone)
-            print("agent_instance.location", agent_id, agent_instance.location)
         observation = self._get_obs()
         info = _get_info()
         return observation, info
@@ -113,7 +112,8 @@ class WorldEnv(gym.Env):
             self.renderer.render(self.agents.values(), self.target_location, self.walls_positions, self.doors_positions, step_number, episod_number)
 
     def close(self):
-        self.renderer.close()
+        if self.render_mode == "human":
+            self.renderer.close()
     
     @property
     def render_mode(self):
@@ -123,15 +123,12 @@ class WorldEnv(gym.Env):
     def render_mode(self, render_mode):
         if render_mode is not None and render_mode not in self.metadata.get("render_modes", []):
             raise ValueError(f"Invalid render_mode '{render_mode}'. Supported modes: {self.metadata['render_modes']}")
-
         self._render_mode = render_mode
-
         if render_mode == "human":
             self.renderer = GridRenderer(
                 grid_width=self.size_x,
                 grid_height=self.size_y
             )
-
 
     @functools.lru_cache(maxsize=None)
     def observation_space(self):

@@ -1,9 +1,10 @@
 import os  # для Q table нужно
+import numpy as np
 import pickle
 import matplotlib.pyplot as plt
 from typing import List
 from agents import Patron, Altruist  # берем классы агентов из соседнего файла
-from env import WorldEnv  # берем класс среды из соседнего файла
+from env import WorldEnv  # берем к4ласс среды из соседнего файла
 
 # Технический долг: посмотреть как реализуется action space в гимназиум по-нормальному?
 
@@ -392,22 +393,24 @@ class SimulationManager:
         self.env.agents[agent_id].status = "trained"
         self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
         self.load_tables(agents_to_load = ["patron_0"], cache_dir="cache/4b")
+        self.patron_q_table = self.env.agents[agent_id].q_table
         agent_id = "altruist_0"
         self.env.agents[agent_id] = Altruist(self.env.action_space())
         self.env.agents[agent_id].start_zone = [(2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]
         self.env.agents[agent_id].status = "training"
-
-        self.env.agents[agent_id].states_of_env["walls_positions"] = walls_positions
-        self.env.agents[agent_id].states_of_env["doors_positions"] = doors_positions
-        self.env.agents[agent_id].states_of_env["length_of_grid"] = length_of_grid
-        self.env.agents[agent_id].states_of_env["height_of_grid"] = height_of_grid
-
+        self.env.agents[agent_id].states_of_env = {
+            "walls_positions": walls_positions,
+            "doors_positions": doors_positions,
+            "length_of_grid": length_of_grid,
+            "height_of_grid": height_of_grid,
+        }
         if learning_flag:
             self.env.render_mode = "rgb_array"
             rewards = self.special_training_function()
             self.cache_tables(cache_dir="cache/4c")
             self.build_plot(rewards)
             print("Episode finished!")
+            self.env.close()
         if testing_flag:
             agents_to_test = ["patron_0", "altruist_0"]
             self.load_tables(agents_to_load = agents_to_test, cache_dir="cache/4c")
@@ -419,17 +422,108 @@ class SimulationManager:
                 total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
+    
+    def Scenary_4c_testing_params(
+            self,
+            learning_flag: bool = True,
+            testing_flag: bool = True
+    ):
+        walls_positions=set([(1, 0), (1, 1), (4, 1), (5, 0)])
+        doors_positions={(1, 2): (3, 1), (4, 2): (3, 0)}
+        length_of_grid = 7
+        height_of_grid = 3
+        self.env = WorldEnv(size_x=length_of_grid,
+                            size_y=height_of_grid,
+                            target_location=(4, 0),
+                            walls_positions=walls_positions,
+                            doors_positions=doors_positions,
+                            render_mode=None
+                        )
+        agent_id = "patron_0"
+        self.env.agents[agent_id] = Patron(self.env.action_space())
+        self.env.agents[agent_id].start_zone = [(0, 0), (0, 1), (0, 2)]
+        self.env.agents[agent_id].status = "trained"
+        self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
+        self.load_tables(agents_to_load = ["patron_0"], cache_dir="cache/4b")
+        self.patron_q_table = self.env.agents[agent_id].q_table
+        agent_id = "altruist_0"
+        self.env.agents[agent_id] = Altruist(self.env.action_space())
+        self.env.agents[agent_id].start_zone = [(2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]
+        self.env.agents[agent_id].status = "training"
+        self.env.agents[agent_id].states_of_env = {
+            "walls_positions": walls_positions,
+            "doors_positions": doors_positions,
+            "length_of_grid": length_of_grid,
+            "height_of_grid": height_of_grid,
+        }
+        if learning_flag:
+            learning_params = {
+                "alpha_min": 0.001,
+                "alpha_steps": 10,
+                "alpha_max": 0.1,
+                "negative_reward_min": 0.05,
+                "negative_reward_steps": 10,
+                "negative_reward_max": 0.15,
+            }
+            total_steps = learning_params["alpha_steps"]*learning_params["negative_reward_steps"]
+            percent_per_step = round(100 / total_steps, 2)
+            current_step = 0
+            self.env.render_mode = "rgb_array"
+            for alpha_changing in np.linspace(learning_params["alpha_max"], learning_params["alpha_min"], learning_params["alpha_steps"]):
+                for negative_reward_changing in np.linspace(learning_params["negative_reward_min"], learning_params["negative_reward_max"], learning_params["negative_reward_steps"]):
+                    current_step += 1
+                    self.nulling_agent(walls_positions, doors_positions, length_of_grid, height_of_grid)
+                    self.env.agents["altruist_0"].alpha_changing = alpha_changing
+                    self.env.agents["altruist_0"].negative_reward = negative_reward_changing
+                    steps_list = self.special_training_function_testing_params()
+                    self.cache_tables_testing_params(agents_to_load = ["altruist_0", "patron_0"], plot_data=steps_list, cache_dir=f"cache/4c/testing_params/{alpha_changing}_{negative_reward_changing}")
+                    print(f"{current_step*percent_per_step}% done. Alpha: {alpha_changing}, Negative Reward: {negative_reward_changing}")
+            self.env.close()
+        if testing_flag:
+            self.load_tables(agents_to_load = ["patron_0"], cache_dir="cache/4c")
+            self.load_tables_testing_params(agents_to_load = ["altruist_0"], alpha_altruist=0.1, negative_reward_altruist=0.061111111111111116,cache_dir="cache/4c/testing_params")
+            for agent_id in self.env.agents.keys():
+                self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
+            self.env.render_mode = "human"
+            total_reward = 0
+            for episode in range(10):
+                total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
+                print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
+            self.env.close()
 
+    def nulling_agent(self, walls_positions, doors_positions, length_of_grid, height_of_grid):
+        patron_instance = self.env.agents["patron_0"]
+        patron_instance.q_table = self.patron_q_table
+        patron_instance.epsilon = patron_instance.min_epsilon
+        altruist_instance = self.env.agents["altruist_0"]
+        altruist_instance.time = 0
+        altruist_instance.q_table = {}
+        altruist_instance.epsilon = 1.0
+        altruist_instance.decay_epsilon_counter = 0
+        altruist_instance.score_time = 0
+        altruist_instance.states_of_env = {
+            "walls_positions": walls_positions,
+            "doors_positions": doors_positions,
+            "length_of_grid": length_of_grid,
+            "height_of_grid": height_of_grid,
+        }
+
+    def special_training_function_testing_params(self, num_episodes = 30000):
+        steps_list = []
+        for episode in range(num_episodes):
+            total_reward, steps = self.run_simulation_step(episode, total_reward=0, learning_flag=True)
+            steps_list.append(steps)
+        return steps_list
+    
     def special_training_function(self, num_episodes = 30000):
-        rewards = []
+        steps_list = []
         #print("self.env.agents", self.env.agents)
         for episode in range(num_episodes):
             total_reward, steps = self.run_simulation_step(episode, total_reward=0, learning_flag=True)
             # print(self.env.agents["patron_0"].q_table)
-            rewards.append(steps)
+            steps_list.append(steps)
             print(f"Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
-        self.env.close()
-        return rewards
+        return steps_list
 
     def run_simulation_step(
             self,
@@ -498,6 +592,17 @@ class SimulationManager:
                 pickle.dump(agent_instance.q_table, f)  # Сохраняем Q-таблицы с помощью pickle
         print(f"Q-таблицы сохранены в {new_folder}")
 
+    def cache_tables_testing_params(self, agents_to_load, plot_data, cache_dir: str = "cache"):
+        if not os.path.exists(cache_dir):
+            os.makedirs(cache_dir)
+        for agent_id in agents_to_load:
+            table_agent_path = os.path.join(cache_dir, f"table_{agent_id}.pkl")
+            with open(table_agent_path, 'wb') as f:
+                pickle.dump(self.env.agents[agent_id].q_table, f)
+        plot_data_path = os.path.join(cache_dir, f"table_data.pkl")
+        with open(plot_data_path, 'wb') as f:
+            pickle.dump(plot_data, f)
+
     def load_tables(self, agents_to_load: List, progon_number: int = None, cache_dir: str = "cache", try_dir_base: str = "progon_"):
         if progon_number is None:
             existing_folders = [f for f in os.listdir(cache_dir) if
@@ -519,6 +624,18 @@ class SimulationManager:
                 print(f"Файл с agent_id {agent_id} не найден.")
         print(f"Таблицы успешно загружены из {progon_folder}")
 
+    def load_tables_testing_params(self, agents_to_load: List, alpha_altruist: float, negative_reward_altruist: float, cache_dir: str = "cache"):
+        folder_path = os.path.join(cache_dir, f"{alpha_altruist}_{negative_reward_altruist}")
+        if not os.path.exists(folder_path):
+            raise ValueError(f"Попытка {alpha_altruist}_{negative_reward_altruist} не существует.")
+        for agent_id in agents_to_load:
+            file_path = os.path.join(folder_path, f"table_{agent_id}.pkl")
+            if os.path.exists(file_path):
+                with open(file_path, 'rb') as f:
+                    self.env.agents[agent_id].q_table = pickle.load(f)  # Загружаем Q-таблицы с помощью pickle
+            else:
+                print(f"Файл с agent_id {agent_id} не найден.")
+        print(f"Таблицы успешно загружены из {folder_path}")
 
     def build_plot(self, rewards: List):
         plt.plot(rewards)
@@ -526,6 +643,7 @@ class SimulationManager:
         plt.ylabel('Total Steps')
         plt.title('Learning Progress')
         plt.show()
+
 
 if __name__ == "__main__":
     import sys  # Это для обработки аргументов командной строки
@@ -565,3 +683,7 @@ if __name__ == "__main__":
             SimulationManager().Scenary_4b(learning_flag=learning_needed, testing_flag=testing_needed)
         case "4c":
             SimulationManager().Scenary_4c(learning_flag=learning_needed, testing_flag=testing_needed)
+        case "4c_testing_params":
+            SimulationManager().Scenary_4c_testing_params(learning_flag=learning_needed, testing_flag=testing_needed)
+        case _:
+            print("Error: Choose scenary to play out with attribute map_type={choose type}")
