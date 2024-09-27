@@ -17,9 +17,11 @@ class WorldEnv(gym.Env):
         "render_fps": 4,
         "name": "v0",
     }
+    scenary_type: str
 
-    def __init__(self, size_x, size_y, target_location, walls_positions, doors_positions, render_mode=None):
+    def __init__(self, scenary_type, size_x, size_y, target_location, walls_positions, doors_positions, render_mode=None):
         self.render_mode = render_mode
+        self.scenary_type = scenary_type
         self.agents = {}
         self.size_x = size_x
         self.size_y = size_y
@@ -127,7 +129,8 @@ class WorldEnv(gym.Env):
         if render_mode == "human":
             self.renderer = GridRenderer(
                 grid_width=self.size_x,
-                grid_height=self.size_y
+                grid_height=self.size_y,
+                scenary_type=self.scenary_type
             )
 
     @functools.lru_cache(maxsize=None)
