@@ -1,5 +1,4 @@
 import pandas as pd
-import pickle
 import os
 import numpy as np
 action_to_direction = {
