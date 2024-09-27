@@ -10,7 +10,7 @@ from env import WorldEnv  # берем к4ласс среды из соседн�
 
 class SimulationManager:
 
-    def Scenary_1a(
+    def Scenario_1a(
             self,
             learning_flag: bool = True,
             testing_flag: bool = True
@@ -44,7 +44,7 @@ class SimulationManager:
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
-    def Scenary_1b(
+    def Scenario_1b(
             self,
             learning_flag: bool = True,
             testing_flag: bool = True
@@ -82,7 +82,7 @@ class SimulationManager:
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
-    def Scenary_2a(
+    def Scenario_2a(
             self,
             learning_flag: bool = True,
             testing_flag: bool = True
@@ -116,7 +116,7 @@ class SimulationManager:
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
-    def Scenary_2b(
+    def Scenario_2b(
             self,
             learning_flag: bool = True,
             testing_flag: bool = True
@@ -160,7 +160,7 @@ class SimulationManager:
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
     
-    def Scenary_2c(
+    def Scenario_2c(
             self,
             learning_flag: bool = True,
             testing_flag: bool = True
@@ -211,7 +211,7 @@ class SimulationManager:
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
-    def Scenary_3a(
+    def Scenario_3a(
             self,
             learning_flag: bool = True,
             testing_flag: bool = True
@@ -249,7 +249,7 @@ class SimulationManager:
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
-    def Scenary_3b(
+    def Scenario_3b(
             self,
             learning_flag: bool = True,
             testing_flag: bool = True
@@ -299,7 +299,7 @@ class SimulationManager:
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
-    def Scenary_4a(
+    def Scenario_4a(
             self,
             learning_flag: bool = True,
             testing_flag: bool = True
@@ -333,7 +333,7 @@ class SimulationManager:
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
-    def Scenary_4b(
+    def Scenario_4b(
             self,
             learning_flag: bool = True,
             testing_flag: bool = True
@@ -371,7 +371,7 @@ class SimulationManager:
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
-    def Scenary_4c(
+    def Scenario_4c(
             self,
             learning_flag: bool = True,
             testing_flag: bool = True
@@ -423,7 +423,7 @@ class SimulationManager:
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
     
-    def Scenary_4c_testing_params(
+    def Scenario_4c_testing_params(
             self,
             learning_flag: bool = True,
             testing_flag: bool = True
@@ -664,26 +664,26 @@ if __name__ == "__main__":
             map_type=arg.split("=")[1]
     match map_type:
         case "1a":
-            SimulationManager().Scenary_1a(learning_flag=learning_needed, testing_flag=testing_needed)
+            SimulationManager().Scenario_1a(learning_flag=learning_needed, testing_flag=testing_needed)
         case "1b":
-            SimulationManager().Scenary_1b(learning_flag=learning_needed, testing_flag=testing_needed)
+            SimulationManager().Scenario_1b(learning_flag=learning_needed, testing_flag=testing_needed)
         case "2a":
-            SimulationManager().Scenary_2a(learning_flag=learning_needed, testing_flag=testing_needed)
+            SimulationManager().Scenario_2a(learning_flag=learning_needed, testing_flag=testing_needed)
         case "2b":
-            SimulationManager().Scenary_2b(learning_flag=learning_needed, testing_flag=testing_needed)
+            SimulationManager().Scenario_2b(learning_flag=learning_needed, testing_flag=testing_needed)
         case "2c":
-            SimulationManager().Scenary_2c(learning_flag=learning_needed, testing_flag=testing_needed)
+            SimulationManager().Scenario_2c(learning_flag=learning_needed, testing_flag=testing_needed)
         case "3a":
-            SimulationManager().Scenary_3a(learning_flag=learning_needed, testing_flag=testing_needed)
+            SimulationManager().Scenario_3a(learning_flag=learning_needed, testing_flag=testing_needed)
         case "3b":
-            SimulationManager().Scenary_3b(learning_flag=learning_needed, testing_flag=testing_needed)
+            SimulationManager().Scenario_3b(learning_flag=learning_needed, testing_flag=testing_needed)
         case "4a":
-            SimulationManager().Scenary_4a(learning_flag=learning_needed, testing_flag=testing_needed)
+            SimulationManager().Scenario_4a(learning_flag=learning_needed, testing_flag=testing_needed)
         case "4b":
-            SimulationManager().Scenary_4b(learning_flag=learning_needed, testing_flag=testing_needed)
+            SimulationManager().Scenario_4b(learning_flag=learning_needed, testing_flag=testing_needed)
         case "4c":
-            SimulationManager().Scenary_4c(learning_flag=learning_needed, testing_flag=testing_needed)
+            SimulationManager().Scenario_4c(learning_flag=learning_needed, testing_flag=testing_needed)
         case "4c_testing_params":
-            SimulationManager().Scenary_4c_testing_params(learning_flag=learning_needed, testing_flag=testing_needed)
+            SimulationManager().Scenario_4c_testing_params(learning_flag=learning_needed, testing_flag=testing_needed)
         case _:
-            print("Error: Choose scenary to play out with attribute map_type={choose type}")
+            print("Error: Choose scenario to play out with attribute map_type={choose type}")

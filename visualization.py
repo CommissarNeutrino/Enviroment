@@ -12,8 +12,8 @@ DOOR_IMAGE_PATH = 'img/door.png'
 BUTTON_IMAGE_PATH = 'img/button.png'
 OBSTACLE_IMAGE_PATH = 'img/obstacle.png'
 FRAMES_DIR = 'video/frames'
-SAVE_FRAMES = True
-CREATE_VIDEO = True
+SAVE_FRAMES = False
+CREATE_VIDEO = False
 CELL_SIZE = 112
 FPS = 60
 
@@ -77,10 +77,15 @@ class GridRenderer:
         self.save_frames = SAVE_FRAMES  # Флаг для сохранения кадров
         self.frame_count = 0  # Счётчик кадров
         self.frames_dir = FRAMES_DIR  # Папка для сохранения кадров
-
         self.window_size_x = grid_width * CELL_SIZE
         self.window_size_y = grid_height * CELL_SIZE
+        self.colors_per_door = {
+            (1, 2): (128, 0, 128),
+            (4, 2): (0, 255, 0),
+        }
+        self.footer_size = 48
         screen_size = (self.window_size_x, self.window_size_y)
+        self.screen_size_with_footer = (self.window_size_x, self.window_size_y + self.footer_size)
 
         # Убедимся, что папка для кадров существует
         if self.save_frames and not os.path.exists(self.frames_dir):
@@ -88,7 +93,7 @@ class GridRenderer:
 
         self.cell_size = min(self.window_size_x // self.grid_width, self.window_size_y // self.grid_height)
         pygame.init()
-        self.screen = pygame.display.set_mode((self.window_size_x, self.window_size_y), pygame.RESIZABLE)
+        self.screen = pygame.display.set_mode((self.window_size_x, self.window_size_y + self.footer_size), pygame.RESIZABLE)
         self.clock = pygame.time.Clock()
         self.is_running = True
 
@@ -98,7 +103,7 @@ class GridRenderer:
         # Загружаем и сохраняем оригинальные изображения
         self.original_background_image = scale_image(
             pygame.image.load(BACKGROUND_IMAGE_PATH),
-            screen_size, False
+            self.screen_size_with_footer, False
         )
         self.background_image = self.original_background_image  # Изначально равен оригиналу
 
@@ -227,10 +232,16 @@ class GridRenderer:
                 button[1] * self.cell_size,
                 self.cell_size, self.cell_size
             )
+            color = self.colors_per_door[door]
+            # Получаем изображения двери и кнопки
             door_image = self.object_images.get("Door")
             button_image = self.object_images.get("Button")
+            # Отображаем их на экране
             self.screen.blit(door_image, door_rect)
             self.screen.blit(button_image, button_rect)
+            # Рисуем сетку зеленым цветом вокруг двери и кнопки
+            pygame.draw.rect(self.screen, color, door_rect, 4)
+            pygame.draw.rect(self.screen, color, button_rect, 4)
 
         # Рендеринг агентов
         for agent in agents:
@@ -262,28 +273,22 @@ class GridRenderer:
 
     def draw_info(self, step_number, episode_number):
         # """ Отображает номер шага на экране """
-        # font = pygame.font.Font(None, 36)  # Создаем шрифт
-        #
-        # text_surface = font.render(f'E: {episod_number + 1} S: {step_number}', True, (255, 255, 255))  # Создаем текст
-        # text_rect = text_surface.get_rect(center=(CELL_SIZE * 1.5, CELL_SIZE // 2))  # позиция текста
-        #
         # # Отображаем текст на экране
         # self.screen.blit(text_surface, text_rect)
         """ Отображает номер шага и эпизода на экране с переводом строки """
         font = pygame.font.Font(None, 36)  # Шрифт
-        color = (255, 255, 255)  # Белый цвет текста
+        color = (0, 0, 0)  # Белый цвет текста
 
         # Создаем строки для шага и эпизода
         episode_text = f'Round: {episode_number+1}'
         step_text = f'Step: {step_number}'
 
+        white_background = (255, 255, 255)  # Цвет фона (белый)
+        step_surface = font.render(step_text, True, color, white_background)  # Белый фон
+        episode_surface = font.render(episode_text, True, color, white_background)  # Белый фон
 
-        # Создаем поверхности для каждой строки
-        step_surface = font.render(step_text, True, color)
-        episode_surface = font.render(episode_text, True, color)
-
-        step_rect = step_surface.get_rect(topleft=(CELL_SIZE * 1, CELL_SIZE * 0.7))  # Первая строка
-        episode_rect = episode_surface.get_rect(topleft=(CELL_SIZE * 1, CELL_SIZE * 0.2))  # Вторая строка
+        step_rect = step_surface.get_rect(midbottom=(self.screen_size_with_footer[0] - CELL_SIZE * 1, self.screen_size_with_footer[1] - self.footer_size/4))  # Справа
+        episode_rect = episode_surface.get_rect(midbottom=(0 + CELL_SIZE * 1, self.screen_size_with_footer[1] - self.footer_size/4))  # Слева
 
         # Отображаем текст на экране
         self.screen.blit(step_surface, step_rect)
