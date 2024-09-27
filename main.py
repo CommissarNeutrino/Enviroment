@@ -565,9 +565,6 @@ class SimulationManager:
             next_state, reward, done, _, _ = self.env.step(action)
             if learning_flag:
                 for agent_id, agent_instance in self.env.agents.items():
-                    # print(state[agent_id], action[agent_id], reward, next_state[agent_id])
-
-                    # change this shit!!!!!
                     if agent_id[:-1] == "altruist_" and self.env.agents["altruist_0"].status == "training":
                         agent_instance.states_of_env[agent_instance.time] = {}
                         agent_instance.states_of_env[agent_instance.time]["patron_position"] = next_state["patron_0"]

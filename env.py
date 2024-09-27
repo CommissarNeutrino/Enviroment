@@ -72,6 +72,8 @@ class WorldEnv(gym.Env):
         new_position = self.decision_grid_edges(agent_instance, direction)
         if (self.decision_walls_positions(new_position)
                 and self.decision_doors_positions(new_position)):
+            if self.render_mode == "human":
+                self.check_for_door_buttons(new_position)
             return tuple(new_position)
         return agent_instance.location
     
@@ -108,6 +110,12 @@ class WorldEnv(gym.Env):
                 return False
         return True
     
+    def check_for_door_buttons(self, new_position):
+        self.renderer.pushed_buttons.clear()
+        if tuple(new_position) in self.doors_positions.values():
+            self.renderer.pushed_buttons.add(tuple(new_position))
+        return
+
     def render(self, step_number, episod_number):
         if self.render_mode == "human":
             # Отрисовываем только при вызове этого метода

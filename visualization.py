@@ -8,7 +8,8 @@ BACKGROUND_IMAGE_PATH = 'img/background.png'
 PATRON_IMAGE_PATH = 'img/patron.png'
 ALTRUIST_IMAGE_PATH = 'img/altruist.png'
 NO_IMAGE = 'img/no_image.png'
-DOOR_IMAGE_PATH = 'img/door.png'
+DOOR_OPENED_IMAGE_PATH = 'img/door_opened.png'
+DOOR_CLOSED_IMAGE_PATH = 'img/door_closed.png'
 BUTTON_IMAGE_PATH = 'img/button.png'
 OBSTACLE_IMAGE_PATH = 'img/obstacle.png'
 FRAMES_DIR = 'video/frames'
@@ -104,6 +105,7 @@ class GridRenderer:
             (4, 2): (0, 255, 0),
         }
         self.footer_size = 48
+        self.pushed_buttons = set()
         screen_size = (self.window_size_x, self.window_size_y)
         self.screen_size_with_footer = (self.window_size_x, self.window_size_y + self.footer_size)
 
@@ -141,7 +143,8 @@ class GridRenderer:
         self.agent_images = self.original_agent_images
 
         self.original_object_images = {
-            "Door": scale_image(pygame.image.load(DOOR_IMAGE_PATH), keep_aspect_ratio=True),
+            "Door_Opened": scale_image(pygame.image.load(DOOR_OPENED_IMAGE_PATH), keep_aspect_ratio=True),
+            "Door_Closed": scale_image(pygame.image.load(DOOR_CLOSED_IMAGE_PATH), keep_aspect_ratio=True),
             "Button": scale_image(pygame.image.load(BUTTON_IMAGE_PATH), keep_aspect_ratio=True),
             "Obstacle": scale_image(pygame.image.load(OBSTACLE_IMAGE_PATH), keep_aspect_ratio=False),
         }
@@ -250,7 +253,10 @@ class GridRenderer:
             )
             color = self.colors_per_door[door]
             # Получаем изображения двери и кнопки
-            door_image = self.object_images.get("Door")
+            if button in self.pushed_buttons:
+                door_image = self.object_images.get("Door_Opened")
+            else:
+                door_image = self.object_images.get("Door_Closed")
             button_image = self.object_images.get("Button")
             # Отображаем их на экране
             self.screen.blit(door_image, door_rect)
