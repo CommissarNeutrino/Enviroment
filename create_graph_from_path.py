@@ -32,5 +32,5 @@ def main(path: str):
         print("Не удалось загрузить данные из файла.")
 
 if __name__ == "__main__":
-    path = "cache/4c/testing_params/0.001_0.05/table_data.pkl"
+    path = "cache/3a/progon_2/0.001_0.05/table_data.pkl"
     main(path)

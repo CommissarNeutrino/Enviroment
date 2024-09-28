@@ -525,7 +525,7 @@ class SimulationManager:
             steps_list.append(steps)
         return steps_list
     
-    def special_training_function(self, num_episodes = 30000):
+    def special_training_function(self, num_episodes = 1):
         steps_list = []
         #print("self.env.agents", self.env.agents)
         for episode in range(num_episodes):
@@ -578,9 +578,28 @@ class SimulationManager:
             total_reward += reward
             possible_actions -= 1
             self.env.render(steps, episode_number)
+        if "altruist_0" in self.env.agents and self.env.agents["altruist_0"].status == "training":
+            additional_steps = self.env.agents["altruist_0"].time_horizon - 1
+            for step in range(0, additional_steps):
+                for agent_id, agent_instance in self.env.agents.items():
+                    action[agent_id] = agent_instance.select_action(state[agent_id])
+                next_state, reward, done, _, _ = self.env.step(action)
+                if learning_flag:
+                    for agent_id, agent_instance in self.env.agents.items():
+                        if agent_id[:-1] == "altruist_" and self.env.agents["altruist_0"].status == "training":
+                            agent_instance.states_of_env[agent_instance.time] = {}
+                            agent_instance.states_of_env[agent_instance.time]["patron_position"] = next_state["patron_0"]
+                            agent_instance.states_of_env[agent_instance.time]["altruist_position"] = next_state["altruist_0"]
+                            agent_instance.states_of_env[agent_instance.time - 1]["patron_action"] = action["patron_0"]
+                            agent_instance.states_of_env[agent_instance.time - 1]["altruist_action"] = action["altruist_0"]
+                        if agent_instance.status == "training":
+                            agent_instance.update_q(state[agent_id], action[agent_id], reward, next_state[agent_id])
+                state = next_state
+                self.env.render(steps, episode_number)
         if learning_flag:
             for agent_instance in self.env.agents.values():
                 agent_instance.decay_epsilon()
+
         return total_reward, steps
 
     def cache_tables(self, cache_dir: str = "cache", try_dir_base: str = "progon_"):
