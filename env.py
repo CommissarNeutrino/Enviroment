@@ -100,8 +100,9 @@ class WorldEnv(gym.Env):
         button_coords = self.doors_positions.get(tuple(new_position), False)
         if not button_coords:
             return True
-        if button_coords == self.agents["altruist_0"].location:
-            return True
+        if "altruist_0" in self.agents:
+            if button_coords == self.agents["altruist_0"].location:
+                return True
         return False
 
     def decision_other_agents(self, new_position):

@@ -1,6 +1,8 @@
 import pygame
 import os
+import numpy as np
 import imageio.v2 as imageio
+from PIL import Image
 
 # Глобальные переменные для путей к изображениям
 GOAL_IMAGE_PATH = 'img/goal.png'
@@ -36,19 +38,15 @@ def scale_image(image, target_size=(CELL_SIZE, CELL_SIZE), keep_aspect_ratio=Tru
 
     return pygame.transform.scale(image, (target_width, target_height))
 
-
 def create_video_from_frames(size_x, size_y, video_dir, fps=int(FPS / 10)):
     """ Собирает видео из сохранённых кадров, добавляя эпизодные заставки по названиям файлов """
-    output_dir = os.path.join("cache", video_dir, "video")
-
+    output_dir = video_dir
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     print(output_dir)
-    # Создаем полный путь к файлу
+    
     v_dir = os.path.join(output_dir, "output_video.mp4")
-
     frames = sorted([os.path.join(output_dir, f) for f in os.listdir(output_dir) if f.endswith('.png')])
-
     with imageio.get_writer(v_dir, fps=fps) as writer:
         current_episode = None
 
@@ -68,8 +66,19 @@ def create_video_from_frames(size_x, size_y, video_dir, fps=int(FPS / 10)):
 
             # Добавляем текущий кадр
             image = imageio.imread(frame_path)
+            
+            # Ensure the image has 3 channels (convert RGBA to RGB if necessary)
+            if image.shape[-1] == 4:  # If the image has an alpha channel (RGBA)
+                image = image[:, :, :3]  # Drop the alpha channel, convert to RGB
+            # Resize image to match video size if necessary
+            if image.shape[:2] != (size_y, size_x):  # Check if image dimensions match the required video size
+                image = np.array(Image.fromarray(image).resize((size_x, size_y)))  # Resize using PIL
+            
             writer.append_data(image)
+    print("video successfully created")
     return
+
+
 
 
 def create_episode_frame(episode_number, size_x, size_y):
@@ -87,6 +96,7 @@ def create_episode_frame(episode_number, size_x, size_y):
     return pygame.surfarray.array3d(episode_image).swapaxes(0, 1)  # swapaxes нужно для корректного порядка
 
 
+
 class GridRenderer:
     def __init__(self, grid_width, grid_height, save_frames=True, save_video=True, scenary_type="1a"):
         self.grid_width = grid_width
@@ -95,24 +105,21 @@ class GridRenderer:
         self.save_video = save_video
         self.frame_count = 0  # Счётчик кадров
         self.scenario = scenary_type
-        self.frames_dir = os.path.join("cache", self.scenario, "video")
-        print(self.frames_dir)
+        self.create_frames_dir()
         self.delay = DELAY
         self.window_size_x = grid_width * CELL_SIZE
         self.window_size_y = grid_height * CELL_SIZE
         self.colors_per_door = {
-            (1, 2): (128, 0, 128),
-            (4, 2): (0, 255, 0),
+            (1, 2): (89, 114, 154),
+            (4, 2): (239, 239, 239),
         }
         self.footer_size = 48
         self.pushed_buttons = set()
-        screen_size = (self.window_size_x, self.window_size_y)
         self.screen_size_with_footer = (self.window_size_x, self.window_size_y + self.footer_size)
 
         # Убедимся, что папка для кадров существует
         if self.save_frames and not os.path.exists(self.frames_dir):
             os.makedirs(self.frames_dir)
-
         self.cell_size = min(self.window_size_x // self.grid_width, self.window_size_y // self.grid_height)
         pygame.init()
         self.screen = pygame.display.set_mode((self.window_size_x, self.window_size_y + self.footer_size), pygame.RESIZABLE)
@@ -262,6 +269,21 @@ class GridRenderer:
             self.screen.blit(door_image, door_rect)
             self.screen.blit(button_image, button_rect)
             # Рисуем сетку зеленым цветом вокруг двери и кнопки
+            # x_start_door = door_rect.left  # левая граница клетки
+            # y_start_door = door_rect.bottom  # нижняя граница клетки
+            # x_end_door = door_rect.right  # правая граница клетки
+            # y_end_door = door_rect.bottom  # линия идет вдоль нижней границы
+
+            # # Рисуем линию
+            # pygame.draw.line(self.screen, color, (x_start_door, y_start_door), (x_end_door, y_end_door), 4)
+
+            # x_start_button = button_rect.left  # левая граница клетки
+            # y_start_button = button_rect.bottom  # нижняя граница клетки
+            # x_end_button = button_rect.right  # правая граница клетки
+            # y_end_button = button_rect.bottom  # линия идет вдоль нижней границы
+
+            # # Рисуем линию
+            # pygame.draw.line(self.screen, color, (x_start_button, y_start_button), (x_end_button, y_end_button), 4)
             pygame.draw.rect(self.screen, color, door_rect, 4)
             pygame.draw.rect(self.screen, color, button_rect, 4)
 
@@ -288,10 +310,24 @@ class GridRenderer:
 
         self.clock.tick(self.fps)
 
+    def create_frames_dir(self):
+        cache_dir = os.path.join("cache", self.scenario)
+        try_dir_base = "progon_"
+        existing_folders = [f for f in os.listdir(cache_dir) if
+                            f.startswith(try_dir_base) and os.path.isdir(os.path.join(cache_dir, f))]
+        if existing_folders:
+            max_i = max([int(f.split('_')[1]) for f in existing_folders])
+            progon_number = max_i
+        else:
+            raise ValueError("Нет сохранённых прогонов для загрузки.")
+        progon_folder = os.path.join(cache_dir, f"{try_dir_base}{progon_number}")
+        self.frames_dir = os.path.join(progon_folder, "video")
+        print(self.frames_dir)
+    
     def save_frame(self, episode_number, step_number):
         """ Сохраняет текущий кадр в папку с изображениями """
-        frame_filename = os.path.join(self.frames_dir, f"{episode_number + 1:02d}{step_number:03d}.png")
-        pygame.image.save(self.screen, frame_filename)
+        frame_episode_dir = os.path.join(self.frames_dir, f"{episode_number + 1:02d}{step_number:03d}.png")
+        pygame.image.save(self.screen, frame_episode_dir)
         self.frame_count += 1
 
     def draw_info(self, step_number, episode_number):
@@ -319,7 +355,7 @@ class GridRenderer:
 
     def close(self):
         if self.save_video:
-            create_video_from_frames(self.window_size_x, self.window_size_y, self.scenario)
+            create_video_from_frames(self.window_size_x, self.window_size_y + self.footer_size, self.frames_dir)
         running = True
         while running:
             for event in pygame.event.get():

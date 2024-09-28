@@ -40,7 +40,7 @@ class SimulationManager:
                 self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
             self.env.render_mode = "human"
             total_reward = 0
-            for episode in range(10):
+            for episode in range(2):
                 total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
@@ -277,7 +277,7 @@ class SimulationManager:
         self.env.agents[agent_id].start_zone = [(0, 0), (0, 1), (0, 2)]
         self.env.agents[agent_id].status = "trained"
         self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
-        self.load_tables(agents_to_load = ["patron_0"], cache_dir="cache/3a")
+        self.load_tables(agents_to_load = ["patron_0"], cache_dir="cache/2b")
         agent_id = "altruist_0"
         self.env.agents[agent_id] = Altruist(self.env.action_space())
         self.env.agents[agent_id].start_zone = [(2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]
@@ -291,7 +291,7 @@ class SimulationManager:
         if learning_flag:
             self.env.render_mode = "rgb_array"
             rewards = self.special_training_function()
-            self.cache_tables(cache_dir="cache/3b")
+            self.cache_tables(cache_dir="cache/3b_on_2b_patron")
             self.build_plot(rewards)
             print("Episode finished!")
         if testing_flag:
@@ -316,7 +316,7 @@ class SimulationManager:
                             scenary_type="4a",
                             target_location=(4, 0),
                             walls_positions=set([(1, 0), (1, 1), (4, 1), (5, 0)]),
-                            doors_positions={(1, 2): (3, 1), (4, 2): (3, 0)},
+                            doors_positions={},
                             render_mode=None
                         )
         agent_id = "patron_0"
@@ -525,7 +525,7 @@ class SimulationManager:
             steps_list.append(steps)
         return steps_list
     
-    def special_training_function(self, num_episodes = 1):
+    def special_training_function(self, num_episodes = 30000):
         steps_list = []
         #print("self.env.agents", self.env.agents)
         for episode in range(num_episodes):
@@ -540,7 +540,7 @@ class SimulationManager:
             episode_number,
             total_reward: int,
             learning_flag: bool = False,
-            possible_actions: int = 200,
+            possible_actions: int = 30,
             ):
         state, _ = self.env.reset()
 
