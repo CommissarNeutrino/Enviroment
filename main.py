@@ -277,7 +277,7 @@ class SimulationManager:
         self.env.agents[agent_id].start_zone = [(0, 0), (0, 1), (0, 2)]
         self.env.agents[agent_id].status = "trained"
         self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
-        self.load_tables(agents_to_load = ["patron_0"], cache_dir="cache/2b")
+        self.load_tables(agents_to_load = ["patron_0"], cache_dir="cache/3a")
         agent_id = "altruist_0"
         self.env.agents[agent_id] = Altruist(self.env.action_space())
         self.env.agents[agent_id].start_zone = [(2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]
@@ -291,7 +291,7 @@ class SimulationManager:
         if learning_flag:
             self.env.render_mode = "rgb_array"
             rewards = self.special_training_function()
-            self.cache_tables(cache_dir="cache/3b_on_2b_patron")
+            self.cache_tables(cache_dir="cache/3b")
             self.build_plot(rewards)
             print("Episode finished!")
         if testing_flag:

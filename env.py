@@ -52,15 +52,16 @@ class WorldEnv(gym.Env):
     def step(self, action):
         # Официально больше не поддерживаем множественное число патронов/альтруистов
         terminated = False
+        direction = {}
+        for agent_id in self.agents:
+            direction[agent_id] = self._action_to_direction[action[agent_id]]
         if "altruist_0" in self.agents:
             agent_id = "altruist_0"
             agent_instance = self.agents[agent_id]
-            direction = self._action_to_direction[action[agent_id]]
-            agent_instance.location = self.altruist_decision_process(agent_instance, direction)
+            agent_instance.location = self.altruist_decision_process(agent_instance, direction[agent_id])
         agent_id = "patron_0"
         agent_instance = self.agents[agent_id]
-        direction = self._action_to_direction[action[agent_id]]
-        agent_instance.location = self.patron_decision_process(agent_instance, direction)
+        agent_instance.location = self.patron_decision_process(agent_instance, direction[agent_id])
         if np.array_equal(agent_instance.location, self.target_location):
             terminated = True
         reward = 1 if terminated else -0.1
@@ -71,7 +72,8 @@ class WorldEnv(gym.Env):
     def altruist_decision_process(self, agent_instance, direction):
         new_position = self.decision_grid_edges(agent_instance, direction)
         if (self.decision_walls_positions(new_position)
-                and self.decision_doors_positions(new_position)):
+                and self.decision_doors_positions(new_position)
+                and self.decision_other_agents_by_altruist(new_position)):
             if self.render_mode == "human":
                 self.check_for_door_buttons(new_position)
             return tuple(new_position)
@@ -108,6 +110,12 @@ class WorldEnv(gym.Env):
     def decision_other_agents(self, new_position):
         if "altruist_0" in self.agents:
             if tuple(new_position) == self.agents["altruist_0"].location:
+                return False
+        return True
+    
+    def decision_other_agents_by_altruist(self, new_position):
+        if "patron_0" in self.agents:
+            if tuple(new_position) == self.agents["patron_0"].location:
                 return False
         return True
     
