@@ -82,7 +82,7 @@ class Altruist(BaseAgent):
             epsilon_decay=0.995,
             min_epsilon=0.01,
             decay_coefficient = 0.95,
-            time_horizon = 3,
+            time_horizon = 8,
             **kwargs
     ):
         super().__init__(**kwargs)
