@@ -98,14 +98,14 @@ def create_episode_frame(episode_number, size_x, size_y):
 
 
 class GridRenderer:
-    def __init__(self, grid_width, grid_height, save_frames=True, save_video=True, scenary_type="1a"):
+    def __init__(self, grid_width, grid_height, save_frames=True, save_video=True, scenary_type="1a", progon_number=None):
         self.grid_width = grid_width
         self.grid_height = grid_height
         self.save_frames = save_frames  # Флаг для сохранения кадров
         self.save_video = save_video
         self.frame_count = 0  # Счётчик кадров
         self.scenario = scenary_type
-        self.create_frames_dir()
+        self.create_frames_dir(progon_number)
         self.delay = DELAY
         self.window_size_x = grid_width * CELL_SIZE
         self.window_size_y = grid_height * CELL_SIZE
@@ -310,16 +310,17 @@ class GridRenderer:
 
         self.clock.tick(self.fps)
 
-    def create_frames_dir(self):
+    def create_frames_dir(self, progon_number):
         cache_dir = os.path.join("cache", self.scenario)
         try_dir_base = "progon_"
         existing_folders = [f for f in os.listdir(cache_dir) if
                             f.startswith(try_dir_base) and os.path.isdir(os.path.join(cache_dir, f))]
-        if existing_folders:
-            max_i = max([int(f.split('_')[1]) for f in existing_folders])
-            progon_number = max_i
-        else:
-            raise ValueError("Нет сохранённых прогонов для загрузки.")
+        if not progon_number:
+            if existing_folders:
+                max_i = max([int(f.split('_')[1]) for f in existing_folders])
+                progon_number = max_i
+            else:
+                raise ValueError("Нет сохранённых прогонов для загрузки.")
         progon_folder = os.path.join(cache_dir, f"{try_dir_base}{progon_number}")
         self.frames_dir = os.path.join(progon_folder, "video")
         print(self.frames_dir)
