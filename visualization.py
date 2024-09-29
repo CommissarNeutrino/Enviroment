@@ -14,12 +14,13 @@ DOOR_OPENED_IMAGE_PATH = 'img/door_opened.png'
 DOOR_CLOSED_IMAGE_PATH = 'img/door_closed.png'
 BUTTON_IMAGE_PATH = 'img/button.png'
 OBSTACLE_IMAGE_PATH = 'img/obstacle.png'
+NEXT_IMAGE_PATH = 'img/next.png'
+FAIL_IMAGE_PATH = 'img/fail.png'
 FRAMES_DIR = 'video/frames'
-SAVE_FRAMES = False
-CREATE_VIDEO = False
 CELL_SIZE = 112
-FPS = 60
+FPS = 30
 DELAY = 200
+
 
 def scale_image(image, target_size=(CELL_SIZE, CELL_SIZE), keep_aspect_ratio=True):
     target_width = target_size[0]
@@ -38,25 +39,46 @@ def scale_image(image, target_size=(CELL_SIZE, CELL_SIZE), keep_aspect_ratio=Tru
 
     return pygame.transform.scale(image, (target_width, target_height))
 
+
 def create_video_from_frames(size_x, size_y, video_dir, fps=int(FPS / 10)):
     """ Собирает видео из сохранённых кадров, добавляя эпизодные заставки по названиям файлов """
     output_dir = video_dir
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     print(output_dir)
-    
+
     v_dir = os.path.join(output_dir, "output_video.mp4")
     frames = sorted([os.path.join(output_dir, f) for f in os.listdir(output_dir) if f.endswith('.png')])
+
     with imageio.get_writer(v_dir, fps=fps) as writer:
         current_episode = None
+        previous_frame = None  # Для хранения предыдущего кадра
+        second_last_frame = None  # Для хранения второго последнего кадра
 
-        for frame_path in frames:
+        for i, frame_path in enumerate(frames):
             # Извлечение номера эпизода из первых двух символов имени файла
             frame_name = os.path.basename(frame_path)
             episode_number = frame_name[:2]  # Первые два символа — номер эпизода
 
             # Если номер эпизода изменился, вставляем титульный кадр
             if episode_number != current_episode:
+                # Добавляем второй последний кадр с задержкой 2 секунды
+                if second_last_frame is not None:
+                    image = imageio.imread(second_last_frame)
+                    if image.shape[-1] == 4:  # Проверяем наличие альфа-канала
+                        image = image[:, :, :3]  # Удаляем альфа-канал
+                    for _ in range(fps * 2):  # Задержка 2 секунды
+                        writer.append_data(image)
+
+                # Добавляем последний кадр с задержкой 3 секунды
+                if previous_frame is not None:
+                    image = imageio.imread(previous_frame)
+                    if image.shape[-1] == 4:  # Проверяем наличие альфа-канала
+                        image = image[:, :, :3]  # Удаляем альфа-канал
+                    for _ in range(fps * 3):  # Задержка 3 секунды
+                        writer.append_data(image)
+
+                # Обновляем текущий эпизод и добавляем титульный кадр
                 current_episode = episode_number
                 episode_frame = create_episode_frame(int(current_episode), size_x, size_y)
 
@@ -66,19 +88,20 @@ def create_video_from_frames(size_x, size_y, video_dir, fps=int(FPS / 10)):
 
             # Добавляем текущий кадр
             image = imageio.imread(frame_path)
-            
-            # Ensure the image has 3 channels (convert RGBA to RGB if necessary)
-            if image.shape[-1] == 4:  # If the image has an alpha channel (RGBA)
-                image = image[:, :, :3]  # Drop the alpha channel, convert to RGB
-            # Resize image to match video size if necessary
-            if image.shape[:2] != (size_y, size_x):  # Check if image dimensions match the required video size
-                image = np.array(Image.fromarray(image).resize((size_x, size_y)))  # Resize using PIL
-            
+            if image.shape[-1] == 4:  # Если изображение имеет альфа-канал (RGBA)
+                image = image[:, :, :3]  # Удаляем альфа-канал, преобразуя в RGB
+            if image.shape[:2] != (size_y, size_x):  # Проверяем размеры изображения
+                image = np.array(Image.fromarray(image).resize((size_x, size_y)))  # Изменение размера с помощью PIL
+
+            # Запоминаем последние два кадра перед сменой эпизода
+            second_last_frame = previous_frame  # Сохраняем предыдущий кадр как второй последний
+            previous_frame = frame_path  # Текущий кадр становится последним
+
+            # Записываем текущий кадр
             writer.append_data(image)
+
     print("video successfully created")
     return
-
-
 
 
 def create_episode_frame(episode_number, size_x, size_y):
@@ -96,9 +119,9 @@ def create_episode_frame(episode_number, size_x, size_y):
     return pygame.surfarray.array3d(episode_image).swapaxes(0, 1)  # swapaxes нужно для корректного порядка
 
 
-
 class GridRenderer:
     def __init__(self, grid_width, grid_height, save_frames=True, save_video=True, scenary_type="1a"):
+
         self.grid_width = grid_width
         self.grid_height = grid_height
         self.save_frames = save_frames  # Флаг для сохранения кадров
@@ -116,6 +139,8 @@ class GridRenderer:
         self.footer_size = 48
         self.pushed_buttons = set()
         self.screen_size_with_footer = (self.window_size_x, self.window_size_y + self.footer_size)
+        self.success_image = scale_image(pygame.image.load(NEXT_IMAGE_PATH), self.screen_size_with_footer)
+        self.failure_image = scale_image(pygame.image.load(FAIL_IMAGE_PATH), self.screen_size_with_footer)
 
         # Убедимся, что папка для кадров существует
         if self.save_frames and not os.path.exists(self.frames_dir):
@@ -145,7 +170,6 @@ class GridRenderer:
         self.original_agent_images = {
             "Patron": scale_image(pygame.image.load(PATRON_IMAGE_PATH), keep_aspect_ratio=False),
             "Altruist": scale_image(pygame.image.load(ALTRUIST_IMAGE_PATH), keep_aspect_ratio=True),
-            "Default": scale_image(pygame.image.load(NO_IMAGE), keep_aspect_ratio=True)
         }
         self.agent_images = self.original_agent_images
 
@@ -218,7 +242,6 @@ class GridRenderer:
 
     def render(self, agents, goal_location, immutable_blocks, doors, step_number, episod_number):
         self.handle_events()
-
         if not self.is_running:
             return
 
@@ -246,7 +269,7 @@ class GridRenderer:
             obstacle_image = self.object_images.get("Obstacle")
             self.screen.blit(obstacle_image, block_rect)
 
-        # Отрисовка дверей
+        # Отрисовка дверей и кнопок
         for door, button in doors.items():
             door_rect = pygame.Rect(
                 door[0] * self.cell_size,
@@ -259,35 +282,18 @@ class GridRenderer:
                 self.cell_size, self.cell_size
             )
             color = self.colors_per_door[door]
-            # Получаем изображения двери и кнопки
             if button in self.pushed_buttons:
                 door_image = self.object_images.get("Door_Opened")
             else:
                 door_image = self.object_images.get("Door_Closed")
             button_image = self.object_images.get("Button")
-            # Отображаем их на экране
             self.screen.blit(door_image, door_rect)
             self.screen.blit(button_image, button_rect)
-            # Рисуем сетку зеленым цветом вокруг двери и кнопки
-            # x_start_door = door_rect.left  # левая граница клетки
-            # y_start_door = door_rect.bottom  # нижняя граница клетки
-            # x_end_door = door_rect.right  # правая граница клетки
-            # y_end_door = door_rect.bottom  # линия идет вдоль нижней границы
 
-            # # Рисуем линию
-            # pygame.draw.line(self.screen, color, (x_start_door, y_start_door), (x_end_door, y_end_door), 4)
-
-            # x_start_button = button_rect.left  # левая граница клетки
-            # y_start_button = button_rect.bottom  # нижняя граница клетки
-            # x_end_button = button_rect.right  # правая граница клетки
-            # y_end_button = button_rect.bottom  # линия идет вдоль нижней границы
-
-            # # Рисуем линию
-            # pygame.draw.line(self.screen, color, (x_start_button, y_start_button), (x_end_button, y_end_button), 4)
             pygame.draw.rect(self.screen, color, door_rect, 4)
             pygame.draw.rect(self.screen, color, button_rect, 4)
 
-        # Рендеринг агентов
+        # Рендеринг всех агентов (включая Altruist)
         for agent in agents:
             agent_rect = pygame.Rect(
                 agent.location[0] * self.cell_size,
@@ -295,20 +301,50 @@ class GridRenderer:
                 self.cell_size, self.cell_size
             )
             agent.type = agent.__class__.__name__
-            agent_image = self.agent_images.get(agent.type, self.agent_images["Default"])
+            agent_image = self.agent_images.get(agent.type, self.agent_images["Patron"])
             self.screen.blit(agent_image, agent_rect)
+
         # Отображение номера шага
         self.draw_info(step_number, episod_number)
 
-        # Обновляем экран
         pygame.display.flip()
         pygame.time.wait(self.delay)
-
-        # Сохраняем текущий кадр, если включена запись
         if self.save_frames:
             self.save_frame(episod_number, step_number)
 
-        self.clock.tick(self.fps)
+        # Проверка, достиг ли Patron цели
+        for agent in agents:
+            if agent.type == "Patron" and agent.location == goal_location:
+
+                # Показ изображения успеха
+                pygame.display.flip()
+                pygame.time.wait(self.delay * 7)
+                self.screen.blit(self.background_image, (0, 0))
+                self.screen.blit(self.success_image, (0, 0))
+                self.draw_info(step_number, episod_number)
+                pygame.display.flip()
+                self.save_frame(episod_number, step_number + 1)
+                pygame.time.wait(self.delay * 15)
+                return  # Завершаем отрисовку после достижения цели
+
+        # Если достигнут определённый шаг, отображаем изображение провала
+        if step_number == 30:
+
+            # pygame.display.flip()
+            pygame.time.wait(self.delay * 7)
+            self.screen.blit(self.background_image, (0, 0))
+            self.screen.blit(self.failure_image, (0, 0))
+            self.draw_info(step_number, episod_number)
+            pygame.display.flip()
+            self.save_frame(episod_number, step_number + 1)
+            pygame.time.wait(self.delay * 15)
+
+            return  # Завершаем отрисовку
+
+        # Обновляем экран
+
+        # Сохраняем текущий кадр, если включена запись
+
 
     def create_frames_dir(self):
         cache_dir = os.path.join("cache", self.scenario)
@@ -322,7 +358,6 @@ class GridRenderer:
             raise ValueError("Нет сохранённых прогонов для загрузки.")
         progon_folder = os.path.join(cache_dir, f"{try_dir_base}{progon_number}")
         self.frames_dir = os.path.join(progon_folder, "video")
-        print(self.frames_dir)
     
     def save_frame(self, episode_number, step_number):
         """ Сохраняет текущий кадр в папку с изображениями """
