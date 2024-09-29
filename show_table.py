@@ -17,7 +17,7 @@ action_to_direction = {
     4: 'stay'   # Оставаться на месте
 }
 
-cache_dir = "cache/3a"
+cache_dir = "cache/4c"
 try_dir_base = "progon_"
 existing_folders = [f for f in os.listdir(cache_dir) if
                     f.startswith(try_dir_base) and os.path.isdir(os.path.join(cache_dir, f))]
