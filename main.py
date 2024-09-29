@@ -166,7 +166,9 @@ class SimulationManager:
     
     def Scenario_2c(
             self,
+            gamma: float,
             time_horizon: int,
+            time_horizon_max: int,
             learning_flag: bool = True,
             testing_flag: bool = True
     ):
@@ -192,6 +194,7 @@ class SimulationManager:
         self.env.agents[agent_id] = Altruist(self.env.action_space())
         self.env.agents[agent_id].start_zone = [(2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]
         self.env.agents[agent_id].status = "training"
+        self.env.agents[agent_id].decay_coefficient = gamma
         self.env.agents[agent_id].time_horizon = time_horizon
 
         self.env.agents[agent_id].states_of_env["walls_positions"] = walls_positions
@@ -207,7 +210,10 @@ class SimulationManager:
             print("Episode finished!")
         if testing_flag:
             agents_to_test = ["patron_0", "altruist_0"]
-            self.load_tables(agents_to_load = agents_to_test, cache_dir="cache/2c")
+            if time_horizon:
+                cache_dir="cache/2c"
+                progon_to_load = self.fing_progon_to_load(time_horizon=time_horizon, time_horizon_max=time_horizon_max, cache_dir=cache_dir)
+                self.load_tables(agents_to_load = agents_to_test, progon_number=progon_to_load, cache_dir=cache_dir)
             for agent_id in agents_to_test:
                 self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
             self.env.render_mode = "human"
@@ -258,7 +264,9 @@ class SimulationManager:
 
     def Scenario_3b(
             self,
+            gamma: float,
             time_horizon: int,
+            time_horizon_max: int,
             learning_flag: bool = True,
             testing_flag: bool = True
     ):
@@ -284,6 +292,7 @@ class SimulationManager:
         self.env.agents[agent_id] = Altruist(self.env.action_space())
         self.env.agents[agent_id].start_zone = [(2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]
         self.env.agents[agent_id].status = "training"
+        self.env.agents[agent_id].decay_coefficient = gamma
         self.env.agents[agent_id].time_horizon = time_horizon
 
         self.env.agents[agent_id].states_of_env["walls_positions"] = walls_positions
@@ -299,7 +308,10 @@ class SimulationManager:
             print("Episode finished!")
         if testing_flag:
             agents_to_test = ["patron_0", "altruist_0"]
-            self.load_tables(agents_to_load = agents_to_test, cache_dir="cache/3b")
+            if time_horizon:
+                cache_dir="cache/3b"
+                progon_to_load = self.fing_progon_to_load(time_horizon=time_horizon, time_horizon_max=time_horizon_max, cache_dir=cache_dir)
+                self.load_tables(agents_to_load = agents_to_test, progon_number=progon_to_load, cache_dir=cache_dir)
             for agent_id in agents_to_test:
                 self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
             self.env.render_mode = "human"
@@ -385,7 +397,9 @@ class SimulationManager:
 
     def Scenario_4c(
             self,
+            gamma: float,
             time_horizon: int,
+            time_horizon_max: int,
             learning_flag: bool = True,
             testing_flag: bool = True
     ):
@@ -412,6 +426,7 @@ class SimulationManager:
         self.env.agents[agent_id] = Altruist(self.env.action_space())
         self.env.agents[agent_id].start_zone = [(2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]
         self.env.agents[agent_id].status = "training"
+        self.env.agents[agent_id].decay_coefficient = gamma
         self.env.agents[agent_id].time_horizon = time_horizon
         self.env.agents[agent_id].states_of_env = {
             "walls_positions": walls_positions,
@@ -428,7 +443,10 @@ class SimulationManager:
             self.env.close()
         if testing_flag:
             agents_to_test = ["patron_0", "altruist_0"]
-            self.load_tables(agents_to_load = agents_to_test, cache_dir="cache/4c")
+            if time_horizon:
+                cache_dir="cache/4c"
+                progon_to_load = self.fing_progon_to_load(time_horizon=time_horizon, time_horizon_max=time_horizon_max, cache_dir=cache_dir)
+                self.load_tables(agents_to_load = agents_to_test, progon_number=progon_to_load, cache_dir=cache_dir)
             for agent_id in agents_to_test:
                 self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
             self.env.render_mode = "human"
@@ -537,7 +555,7 @@ class SimulationManager:
             total_reward, steps = self.run_simulation_step(episode, total_reward=0, learning_flag=True)
             # print(self.env.agents["patron_0"].q_table)
             steps_list.append(steps)
-            print(f"Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
+            # print(f"Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
         return steps_list
 
     def run_simulation_step(
@@ -692,6 +710,18 @@ class SimulationManager:
         plt.title('Learning Progress')
         plt.savefig(filename)
 
+    def fing_progon_to_load(self, time_horizon: int, time_horizon_max: int, cache_dir: str, try_dir_base: str = "progon_"):
+        existing_folders = [f for f in os.listdir(cache_dir) if
+                            f.startswith(try_dir_base) and os.path.isdir(os.path.join(cache_dir, f))]
+        if existing_folders:
+            max_i = max([int(f.split('_')[1]) for f in existing_folders])
+            max_progon_number = max_i
+        else:
+            raise ValueError("Нет сохранённых прогонов для загрузки.")
+        progon_number = max_progon_number - time_horizon_max + time_horizon
+        return progon_number
+
+
 
 def scenario_chooser():
     import sys  # Это для обработки аргументов командной строки
@@ -736,23 +766,43 @@ def scenario_chooser():
         case _:
             print("Error: Choose scenario to play out with attribute map_type={choose type}")
 
-def altruist_horizon_iterator():
+def altruist_horizon_iterator_training():
     time_horizon_max_by_scenario = {
-        "2c": 13,
-        "3b": 15,
-        "4c": 21
+        "2c": [1, 3, 9, 13],
+        "3b": [1, 3, 9, 13],
+        "4c": [1, 3, 9, 13, 20]
     }
-    for scenario in time_horizon_max_by_scenario:
-        for time_horizon in range(1, time_horizon_max_by_scenario[scenario]):
-            match scenario:
-                case "2c":
-                    SimulationManager().Scenario_2c(time_horizon=time_horizon, learning_flag=True, testing_flag=False)
-                case "3b":
-                    SimulationManager().Scenario_3b(time_horizon=time_horizon, learning_flag=True, testing_flag=False)
-                case "4c":
-                    SimulationManager().Scenario_4c(time_horizon=time_horizon, learning_flag=True, testing_flag=False)
+    for gamma in [0,1, 0.7, 0.95]:
+        for scenario in time_horizon_max_by_scenario:
+            for time_horizon in time_horizon_max_by_scenario[scenario]:
+                print(f"Gamma: {gamma}, Scenario: {scenario}, time_horizon: {time_horizon}")
+                match scenario:
+                    case "2c":
+                        SimulationManager().Scenario_2c(gamma=gamma, time_horizon=time_horizon, time_horizon_max = time_horizon_max_by_scenario[scenario][-1], learning_flag=True, testing_flag=False)
+                    case "3b":
+                        SimulationManager().Scenario_3b(gamma=gamma, time_horizon=time_horizon, time_horizon_max = time_horizon_max_by_scenario[scenario][-1], learning_flag=True, testing_flag=False)
+                    case "4c":
+                        SimulationManager().Scenario_4c(gamma=gamma, time_horizon=time_horizon, time_horizon_max = time_horizon_max_by_scenario[scenario][-1], learning_flag=True, testing_flag=False)
+
+def altruist_horizon_iterator_testing():
+    time_horizon_max_by_scenario = {
+        "2c": [1, 3, 9, 13],
+        "3b": [1, 3, 9, 13],
+        "4c": [1, 3, 9, 13, 20]
+    }
+    for gamma in [0,1, 0.7, 0.95]:
+        for scenario in time_horizon_max_by_scenario:
+            for time_horizon in time_horizon_max_by_scenario[scenario]:
+                match scenario:
+                    case "2c":
+                        SimulationManager().Scenario_2c(gamma=gamma, time_horizon=time_horizon, time_horizon_max = time_horizon_max_by_scenario[scenario][-1], learning_flag=False, testing_flag=True)
+                    case "3b":
+                        SimulationManager().Scenario_3b(gamma=gamma, time_horizon=time_horizon, time_horizon_max = time_horizon_max_by_scenario[scenario][-1], learning_flag=False, testing_flag=True)
+                    case "4c":
+                        SimulationManager().Scenario_4c(gamma=gamma, time_horizon=time_horizon, time_horizon_max = time_horizon_max_by_scenario[scenario][-1], learning_flag=False, testing_flag=True)
 
 
 if __name__ == "__main__":
-    altruist_horizon_iterator()
+    altruist_horizon_iterator_training()
+    # altruist_horizon_iterator_testing()
     # scenario_chooser()
