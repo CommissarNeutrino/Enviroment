@@ -19,7 +19,7 @@ SAVE_FRAMES = False
 CREATE_VIDEO = False
 CELL_SIZE = 112
 FPS = 60
-DELAY = 200
+DELAY = 400
 
 def scale_image(image, target_size=(CELL_SIZE, CELL_SIZE), keep_aspect_ratio=True):
     target_width = target_size[0]
