@@ -31,7 +31,7 @@ class Patron(BaseAgent):
             alpha=0.1,
             gamma=0.99,
             epsilon=1.0,
-            epsilon_decay=0.95,
+            epsilon_decay=0.995,
             min_epsilon=0.01,
             **kwargs
     ):
@@ -82,7 +82,7 @@ class Altruist(BaseAgent):
             epsilon_decay=0.995,
             min_epsilon=0.01,
             decay_coefficient = 0.95,
-            time_horizon = 3,
+            time_horizon = 5,
             **kwargs
     ):
         super().__init__(**kwargs)
@@ -133,7 +133,6 @@ class Altruist(BaseAgent):
                 for direction in self._action_to_direction.values():
                     if self._allowed_step(tile, direction):
                         next_tiles.add(tuple(direction + tile))
-                    
             score = score + exp * len(next_tiles)
             self.score_time += 1
             exp = exp * self.decay_coefficient
@@ -171,13 +170,12 @@ class Altruist(BaseAgent):
         #print(new_position, agent_location, direction, agent_location + direction)
         #print("check", np.array_equal(new_position, agent_location + direction))
 
-        if not np.array_equal(new_position, agent_location + direction):
-            return False
-
-        if (self.decision_walls_positions(new_position)
-                and self.decision_doors_positions(new_position)
-                and self.decision_other_agents(new_position)):
+        # if not np.array_equal(new_position, agent_location + direction):
+        #     return False
+        if self.decision_other_agents(new_position):
             return True
+        # if (self.decision_walls_positions(new_position) and self.decision_doors_positions(new_position)):
+                # return False
         return False
 
     
@@ -201,7 +199,7 @@ class Altruist(BaseAgent):
         return False
 
     def decision_other_agents(self, new_position):
-        if tuple(new_position) == self.states_of_env[self.score_time]["altruist_position"]:
+        if tuple(new_position) == self.states_of_env[self.score_time]["patron_position"]:
             return False
         return True
 

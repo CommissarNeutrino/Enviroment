@@ -79,7 +79,7 @@ class SimulationManager:
                 self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
             self.env.render_mode = "human"
             total_reward = 0
-            for episode in range(10):
+            for episode in range(2):
                 total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
@@ -114,7 +114,7 @@ class SimulationManager:
                 self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
             self.env.render_mode = "human"
             total_reward = 0
-            for episode in range(3):
+            for episode in range(2):
                 total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
@@ -159,7 +159,7 @@ class SimulationManager:
                 self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
             self.env.render_mode = "human"
             total_reward = 0
-            for episode in range(3):
+            for episode in range(2):
                 total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
@@ -211,9 +211,9 @@ class SimulationManager:
 
             self.env.render_mode = "human"
             total_reward = 0
-            for episode in range(3):
+            for episode in range(2):
                 total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
-                print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
+                print(f"Test Episode {episode + 1}: Patron_Start: {self.start_patron}, Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
     def Scenario_3a(
@@ -250,13 +250,14 @@ class SimulationManager:
                 self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
             self.env.render_mode = "human"
             total_reward = 0
-            for episode in range(10):
+            for episode in range(2):
                 total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
 
     def Scenario_3b(
             self,
+            progon_number: None,
             learning_flag: bool = True,
             testing_flag: bool = True
     ):
@@ -270,6 +271,7 @@ class SimulationManager:
                             target_location=(4, 0),
                             walls_positions=walls_positions,
                             doors_positions=doors_positions,
+                            progon_number=progon_number,
                             render_mode=None
                         )
         agent_id = "patron_0"
@@ -277,31 +279,30 @@ class SimulationManager:
         self.env.agents[agent_id].start_zone = [(0, 0), (0, 1), (0, 2)]
         self.env.agents[agent_id].status = "trained"
         self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
-        self.load_tables(agents_to_load = ["patron_0"], cache_dir="cache/2b")
+        self.load_tables(agents_to_load = ["patron_0"], cache_dir="cache/3a")
         agent_id = "altruist_0"
         self.env.agents[agent_id] = Altruist(self.env.action_space())
         self.env.agents[agent_id].start_zone = [(2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]
         self.env.agents[agent_id].status = "training"
-
         self.env.agents[agent_id].states_of_env["walls_positions"] = walls_positions
         self.env.agents[agent_id].states_of_env["doors_positions"] = doors_positions
         self.env.agents[agent_id].states_of_env["length_of_grid"] = length_of_grid
         self.env.agents[agent_id].states_of_env["height_of_grid"] = height_of_grid
-
         if learning_flag:
             self.env.render_mode = "rgb_array"
             rewards = self.special_training_function()
-            self.cache_tables(cache_dir="cache/3b_on_2b_patron")
+            self.cache_tables(cache_dir="cache/3b")
             self.build_plot(rewards)
             print("Episode finished!")
         if testing_flag:
+            self.env.progon_number = progon_number
             agents_to_test = ["patron_0", "altruist_0"]
-            self.load_tables(agents_to_load = agents_to_test, cache_dir="cache/3b")
+            self.load_tables(agents_to_load = agents_to_test, progon_number=progon_number, cache_dir="cache/3b")
             for agent_id in agents_to_test:
                 self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
             self.env.render_mode = "human"
             total_reward = 0
-            for episode in range(10):
+            for episode in range(2):
                 total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
@@ -336,7 +337,7 @@ class SimulationManager:
                 self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
             self.env.render_mode = "human"
             total_reward = 0
-            for episode in range(10):
+            for episode in range(2):
                 total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
@@ -375,7 +376,7 @@ class SimulationManager:
                 self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
             self.env.render_mode = "human"
             total_reward = 0
-            for episode in range(10):
+            for episode in range(2):
                 total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
@@ -428,7 +429,7 @@ class SimulationManager:
                 self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
             self.env.render_mode = "human"
             total_reward = 0
-            for episode in range(10):
+            for episode in range(2):
                 total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
@@ -496,7 +497,7 @@ class SimulationManager:
                 self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
             self.env.render_mode = "human"
             total_reward = 0
-            for episode in range(10):
+            for episode in range(2):
                 total_reward, steps = self.run_simulation_step(episode, total_reward, learning_flag=False)
                 print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
             self.env.close()
@@ -532,7 +533,7 @@ class SimulationManager:
             total_reward, steps = self.run_simulation_step(episode, total_reward=0, learning_flag=True)
             # print(self.env.agents["patron_0"].q_table)
             steps_list.append(steps)
-            print(f"Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
+            print(f"Episode {episode + 1}: Patron_Start: {self.start_patron} Total Reward = {total_reward}, Steps - {steps}")
         return steps_list
 
     def run_simulation_step(
@@ -543,7 +544,7 @@ class SimulationManager:
             possible_actions: int = 30,
             ):
         state, _ = self.env.reset()
-
+        self.start_patron = self.env.agents["patron_0"].location
         #print("self.env.agents", self.env.agents)
         if "altruist_0" in self.env.agents.keys():
             #print("has")
@@ -558,6 +559,7 @@ class SimulationManager:
         steps = 0
         action = {}
         done = False
+        self.env.render(steps, episode_number)
         while possible_actions > 0 and not done:
             steps += 1
             for agent_id, agent_instance in self.env.agents.items():
@@ -595,7 +597,7 @@ class SimulationManager:
                         if agent_instance.status == "training":
                             agent_instance.update_q(state[agent_id], action[agent_id], reward, next_state[agent_id])
                 state = next_state
-                self.env.render(steps, episode_number)
+                # self.env.render(steps, episode_number)
         if learning_flag:
             for agent_instance in self.env.agents.values():
                 agent_instance.decay_epsilon()
@@ -629,7 +631,7 @@ class SimulationManager:
         with open(plot_data_path, 'wb') as f:
             pickle.dump(plot_data, f)
 
-    def load_tables(self, agents_to_load: List, progon_number: int = None, cache_dir: str = "cache", try_dir_base: str = "progon_"):
+    def load_tables(self, agents_to_load: List, progon_number = None, cache_dir: str = "cache", try_dir_base: str = "progon_"):
         if progon_number is None:
             existing_folders = [f for f in os.listdir(cache_dir) if
                                 f.startswith(try_dir_base) and os.path.isdir(os.path.join(cache_dir, f))]
@@ -681,6 +683,7 @@ if __name__ == "__main__":
     # можно передать из командной строки агрументы no_learn или no_test и тогда будет что-то одно
     # ПЕРЕПИСАТЬ НА ЛОГИКУ КОНЕЧНОГО ПОЛЬЗОВАТЕЛЯ ***
     map_type = "4b"
+    progon_number = None
     if "no_learn" in sys.argv:
         learning_needed = False
     if "no_test" in sys.argv:
@@ -688,6 +691,9 @@ if __name__ == "__main__":
     for arg in sys.argv:
         if arg.startswith("map_type"):
             map_type=arg.split("=")[1]
+    for arg in sys.argv:
+        if arg.startswith("progon_num"):
+            progon_number=arg.split("=")[1]
     match map_type:
         case "1a":
             SimulationManager().Scenario_1a(learning_flag=learning_needed, testing_flag=testing_needed)
@@ -702,7 +708,7 @@ if __name__ == "__main__":
         case "3a":
             SimulationManager().Scenario_3a(learning_flag=learning_needed, testing_flag=testing_needed)
         case "3b":
-            SimulationManager().Scenario_3b(learning_flag=learning_needed, testing_flag=testing_needed)
+            SimulationManager().Scenario_3b(progon_number=progon_number, learning_flag=learning_needed, testing_flag=testing_needed)
         case "4a":
             SimulationManager().Scenario_4a(learning_flag=learning_needed, testing_flag=testing_needed)
         case "4b":

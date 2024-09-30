@@ -19,9 +19,10 @@ class WorldEnv(gym.Env):
     }
     scenary_type: str
 
-    def __init__(self, scenary_type, size_x, size_y, target_location, walls_positions, doors_positions, render_mode=None):
+    def __init__(self, scenary_type, size_x, size_y, target_location, walls_positions, doors_positions, progon_number=None, render_mode=None):
         self.render_mode = render_mode
         self.scenary_type = scenary_type
+        self.progon_number = progon_number
         self.agents = {}
         self.size_x = size_x
         self.size_y = size_y
@@ -63,7 +64,7 @@ class WorldEnv(gym.Env):
         agent_instance.location = self.patron_decision_process(agent_instance, direction)
         if np.array_equal(agent_instance.location, self.target_location):
             terminated = True
-        reward = 1 if terminated else -0.1
+        reward = 1 if terminated else -0.2
         observation = self._get_obs()
         info = _get_info()
         return observation, reward, terminated, False, info
@@ -71,7 +72,8 @@ class WorldEnv(gym.Env):
     def altruist_decision_process(self, agent_instance, direction):
         new_position = self.decision_grid_edges(agent_instance, direction)
         if (self.decision_walls_positions(new_position)
-                and self.decision_doors_positions(new_position)):
+                and self.decision_doors_positions(new_position)
+                and self.decision_other_agents_altruist(new_position)):
             if self.render_mode == "human":
                 self.check_for_door_buttons(new_position)
             return tuple(new_position)
@@ -81,7 +83,7 @@ class WorldEnv(gym.Env):
         new_position = self.decision_grid_edges(agent_instance, direction)
         if (self.decision_walls_positions(new_position)
                 and self.decision_doors_positions(new_position)
-                and self.decision_other_agents(new_position)):
+                and self.decision_other_agents_patron(new_position)):
             return tuple(new_position)
         return agent_instance.location
 
@@ -105,7 +107,13 @@ class WorldEnv(gym.Env):
                 return True
         return False
 
-    def decision_other_agents(self, new_position):
+    def decision_other_agents_altruist(self, new_position):
+        if "patron_0" in self.agents:
+            if tuple(new_position) == self.agents["patron_0"].location:
+                return False
+        return True
+
+    def decision_other_agents_patron(self, new_position):
         if "altruist_0" in self.agents:
             if tuple(new_position) == self.agents["altruist_0"].location:
                 return False
@@ -139,7 +147,8 @@ class WorldEnv(gym.Env):
             self.renderer = GridRenderer(
                 grid_width=self.size_x,
                 grid_height=self.size_y,
-                scenary_type=self.scenary_type
+                scenary_type=self.scenary_type,
+                progon_number=self.progon_number
             )
 
     @functools.lru_cache(maxsize=None)

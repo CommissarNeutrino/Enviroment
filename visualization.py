@@ -19,7 +19,7 @@ SAVE_FRAMES = False
 CREATE_VIDEO = False
 CELL_SIZE = 112
 FPS = 60
-DELAY = 200
+DELAY = 400
 
 def scale_image(image, target_size=(CELL_SIZE, CELL_SIZE), keep_aspect_ratio=True):
     target_width = target_size[0]
@@ -38,15 +38,17 @@ def scale_image(image, target_size=(CELL_SIZE, CELL_SIZE), keep_aspect_ratio=Tru
 
     return pygame.transform.scale(image, (target_width, target_height))
 
-def create_video_from_frames(size_x, size_y, video_dir, fps=int(FPS / 10)):
-    """ Собирает видео из сохранённых кадров, добавляя эпизодные заставки по названиям файлов """
+def create_video_from_frames(size_x, size_y, video_dir, fps=int(FPS / 10), frame_delay=4):
+    """ Собирает видео из сохранённых кадров, добавляя эпизодные заставки по названиям файлов с задержкой между кадрами """
     output_dir = video_dir
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     print(output_dir)
     
     v_dir = os.path.join(output_dir, "output_video.mp4")
+
     frames = sorted([os.path.join(output_dir, f) for f in os.listdir(output_dir) if f.endswith('.png')])
+    
     with imageio.get_writer(v_dir, fps=fps) as writer:
         current_episode = None
 
@@ -64,17 +66,21 @@ def create_video_from_frames(size_x, size_y, video_dir, fps=int(FPS / 10)):
                 for _ in range(fps):
                     writer.append_data(episode_frame)
 
-            # Добавляем текущий кадр
+            # Добавляем текущий кадр с задержкой
             image = imageio.imread(frame_path)
             
             # Ensure the image has 3 channels (convert RGBA to RGB if necessary)
             if image.shape[-1] == 4:  # If the image has an alpha channel (RGBA)
                 image = image[:, :, :3]  # Drop the alpha channel, convert to RGB
+            
             # Resize image to match video size if necessary
             if image.shape[:2] != (size_y, size_x):  # Check if image dimensions match the required video size
                 image = np.array(Image.fromarray(image).resize((size_x, size_y)))  # Resize using PIL
-            
-            writer.append_data(image)
+
+            # Добавляем текущий кадр с задержкой между кадрами
+            for _ in range(frame_delay):
+                writer.append_data(image)
+                
     print("video successfully created")
     return
 
@@ -98,14 +104,14 @@ def create_episode_frame(episode_number, size_x, size_y):
 
 
 class GridRenderer:
-    def __init__(self, grid_width, grid_height, save_frames=True, save_video=True, scenary_type="1a"):
+    def __init__(self, grid_width, grid_height, save_frames=True, save_video=True, scenary_type="1a", progon_number=None):
         self.grid_width = grid_width
         self.grid_height = grid_height
         self.save_frames = save_frames  # Флаг для сохранения кадров
         self.save_video = save_video
         self.frame_count = 0  # Счётчик кадров
         self.scenario = scenary_type
-        self.create_frames_dir()
+        self.create_frames_dir(progon_number=progon_number)
         self.delay = DELAY
         self.window_size_x = grid_width * CELL_SIZE
         self.window_size_y = grid_height * CELL_SIZE
@@ -310,16 +316,17 @@ class GridRenderer:
 
         self.clock.tick(self.fps)
 
-    def create_frames_dir(self):
+    def create_frames_dir(self, progon_number):
         cache_dir = os.path.join("cache", self.scenario)
         try_dir_base = "progon_"
         existing_folders = [f for f in os.listdir(cache_dir) if
                             f.startswith(try_dir_base) and os.path.isdir(os.path.join(cache_dir, f))]
-        if existing_folders:
-            max_i = max([int(f.split('_')[1]) for f in existing_folders])
-            progon_number = max_i
-        else:
-            raise ValueError("Нет сохранённых прогонов для загрузки.")
+        if not progon_number:
+            if existing_folders:
+                max_i = max([int(f.split('_')[1]) for f in existing_folders])
+                progon_number = max_i
+            else:
+                raise ValueError("Нет сохранённых прогонов для загрузки.")
         progon_folder = os.path.join(cache_dir, f"{try_dir_base}{progon_number}")
         self.frames_dir = os.path.join(progon_folder, "video")
         print(self.frames_dir)

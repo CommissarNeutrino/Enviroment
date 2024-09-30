@@ -17,7 +17,7 @@ action_to_direction = {
     4: 'stay'   # Оставаться на месте
 }
 
-cache_dir = "cache/3a"
+cache_dir = "cache/2c"
 try_dir_base = "progon_"
 existing_folders = [f for f in os.listdir(cache_dir) if
                     f.startswith(try_dir_base) and os.path.isdir(os.path.join(cache_dir, f))]
@@ -30,7 +30,7 @@ progon_folder = os.path.join(cache_dir, f"{try_dir_base}{progon_number}")
 
 # Открываем файл и читаем данные
 print(progon_number)
-data = pd.read_pickle(f"{progon_folder}/table_patron_0.pkl")
+data = pd.read_pickle(f"{progon_folder}/table_altruist_0.pkl")
 
 # Создадим набор действий (используем числовые действия для сопоставления с направлениями)
 actions = set(action for (state, action) in data.keys())
