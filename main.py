@@ -201,14 +201,13 @@ class SimulationManager:
             self.env.render_mode = "rgb_array"
             rewards = self.special_training_function()
             self.cache_tables(cache_dir="cache/2c")
-            self.build_plot(rewards)
+            self.save_plot(rewards, cache_dir="cache/2c")
             print("Episode finished!")
         if testing_flag:
             agents_to_test = ["patron_0", "altruist_0"]
             self.load_tables(agents_to_load = agents_to_test, cache_dir="cache/2c")
             for agent_id in agents_to_test:
                 self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
-
             self.env.render_mode = "human"
             total_reward = 0
             for episode in range(2):
@@ -419,7 +418,7 @@ class SimulationManager:
             self.env.render_mode = "rgb_array"
             rewards = self.special_training_function()
             self.cache_tables(cache_dir="cache/4c")
-            self.build_plot(rewards)
+            self.save_plot(rewards, cache_dir="cache/4c")
             print("Episode finished!")
             self.env.close()
         if testing_flag:
@@ -672,8 +671,36 @@ class SimulationManager:
         plt.title('Learning Progress')
         plt.show()
 
+    def save_plot(self, rewards: List, cache_dir: str, try_dir_base: str = "progon_"):
+        existing_folders = [f for f in os.listdir(cache_dir) if
+                            f.startswith(try_dir_base) and os.path.isdir(os.path.join(cache_dir, f))]
+        if existing_folders:
+            max_i = max([int(f.split('_')[1]) for f in existing_folders])
+            progon_number = max_i
+        else:
+            raise ValueError("Нет сохранённых прогонов для загрузки.")
+        progon_folder = os.path.join(cache_dir, f"{try_dir_base}{progon_number}")
+        filename = os.path.join(progon_folder, "plot.png")
+        plt.plot(rewards)
+        plt.xlabel('Episode')
+        plt.ylabel('Total Steps')
+        plt.title('Learning Progress')
+        plt.savefig(filename)
 
-if __name__ == "__main__":
+    def fing_progon_to_load(self, time_horizon: int, time_horizon_max: int, cache_dir: str, try_dir_base: str = "progon_"):
+        existing_folders = [f for f in os.listdir(cache_dir) if
+                            f.startswith(try_dir_base) and os.path.isdir(os.path.join(cache_dir, f))]
+        if existing_folders:
+            max_i = max([int(f.split('_')[1]) for f in existing_folders])
+            max_progon_number = max_i
+        else:
+            raise ValueError("Нет сохранённых прогонов для загрузки.")
+        progon_number = max_progon_number - time_horizon_max + time_horizon
+        return progon_number
+
+
+
+def scenario_chooser():
     import sys  # Это для обработки аргументов командной строки
 
     # по умолчанию запускается на обучение агента + демонстрацию (как и было)
@@ -719,3 +746,44 @@ if __name__ == "__main__":
             SimulationManager().Scenario_4c_testing_params(learning_flag=learning_needed, testing_flag=testing_needed)
         case _:
             print("Error: Choose scenario to play out with attribute map_type={choose type}")
+
+def altruist_horizon_iterator_training():
+    time_horizon_max_by_scenario = {
+        "2c": [1, 3, 9, 13],
+        "3b": [1, 3, 9, 13],
+        "4c": [1, 3, 9, 13, 20]
+    }
+    for gamma in [0.1, 0.7, 0.95]:
+        for scenario in time_horizon_max_by_scenario:
+            for time_horizon in time_horizon_max_by_scenario[scenario]:
+                print(f"Gamma: {gamma}, Scenario: {scenario}, time_horizon: {time_horizon}")
+                match scenario:
+                    case "2c":
+                        SimulationManager().Scenario_2c(gamma=gamma, time_horizon=time_horizon, time_horizon_max = time_horizon_max_by_scenario[scenario][-1], learning_flag=True, testing_flag=False)
+                    case "3b":
+                        SimulationManager().Scenario_3b(gamma=gamma, time_horizon=time_horizon, time_horizon_max = time_horizon_max_by_scenario[scenario][-1], learning_flag=True, testing_flag=False)
+                    case "4c":
+                        SimulationManager().Scenario_4c(gamma=gamma, time_horizon=time_horizon, time_horizon_max = time_horizon_max_by_scenario[scenario][-1], learning_flag=True, testing_flag=False)
+
+def altruist_horizon_iterator_testing():
+    time_horizon_max_by_scenario = {
+        # "2c": [1, 3, 9, 13],
+        "3b": [1, 3, 9, 13],
+        # "4c": [3]
+    }
+    for gamma in [0.7]:
+        for scenario in time_horizon_max_by_scenario:
+            for time_horizon in time_horizon_max_by_scenario[scenario]:
+                match scenario:
+                    # case "2c":
+                    #     SimulationManager().Scenario_2c(gamma=gamma, time_horizon=time_horizon, time_horizon_max = len(time_horizon_max_by_scenario[scenario]), learning_flag=False, testing_flag=True)
+                    case "3b":
+                        SimulationManager().Scenario_3b(gamma=gamma, time_horizon=time_horizon, time_horizon_max = len(time_horizon_max_by_scenario[scenario]), learning_flag=False, testing_flag=True)
+                    # case "4c":
+                    #     SimulationManager().Scenario_4c(gamma=gamma, time_horizon=time_horizon, time_horizon_max = len(time_horizon_max_by_scenario[scenario]), learning_flag=False, testing_flag=True)
+
+
+if __name__ == "__main__":
+    #altruist_horizon_iterator_training()
+    # altruist_horizon_iterator_testing()
+    scenario_chooser()

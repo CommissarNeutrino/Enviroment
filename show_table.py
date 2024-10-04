@@ -17,7 +17,7 @@ action_to_direction = {
     4: 'stay'   # Оставаться на месте
 }
 
-cache_dir = "cache/2c"
+cache_dir = "cache/2b"
 try_dir_base = "progon_"
 existing_folders = [f for f in os.listdir(cache_dir) if
                     f.startswith(try_dir_base) and os.path.isdir(os.path.join(cache_dir, f))]
@@ -26,7 +26,7 @@ if existing_folders:
     progon_number = max_i
 else:
     raise ValueError("Нет сохранённых прогонов для загрузки.")
-progon_folder = os.path.join(cache_dir, f"{try_dir_base}{progon_number}")
+progon_folder = os.path.join(f"cache/2c/progon_5")
 
 # Открываем файл и читаем данные
 print(progon_number)
