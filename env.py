@@ -26,6 +26,7 @@ class WorldEnv(gym.Env):
         self.agents = {}
         self.size_x = size_x
         self.size_y = size_y
+        self.progon_number = None
         self.target_location = target_location
         self.walls_positions = walls_positions
         self.doors_positions = doors_positions
@@ -84,7 +85,7 @@ class WorldEnv(gym.Env):
         new_position = self.decision_grid_edges(agent_instance, direction)
         if (self.decision_walls_positions(new_position)
                 and self.decision_doors_positions(new_position)
-                and self.decision_other_agents(new_position)):
+                and self.decision_other_agents_by_patron(new_position)):
             return tuple(new_position)
         return agent_instance.location
 
@@ -108,7 +109,7 @@ class WorldEnv(gym.Env):
                 return True
         return False
 
-    def decision_other_agents(self, new_position):
+    def decision_other_agents_by_patron(self, new_position):
         if "altruist_0" in self.agents:
             if tuple(new_position) == self.agents["altruist_0"].location:
                 return False

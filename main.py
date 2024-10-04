@@ -447,7 +447,8 @@ class SimulationManager:
             agents_to_test = ["patron_0", "altruist_0"]
             if time_horizon:
                 cache_dir="cache/4c"
-                progon_to_load = self.fing_progon_to_load(time_horizon=time_horizon, time_horizon_max=time_horizon_max, cache_dir=cache_dir)
+                # progon_to_load = self.fing_progon_to_load(time_horizon=time_horizon, time_horizon_max=time_horizon_max, cache_dir=cache_dir)
+                progon_to_load=1
                 self.load_tables(agents_to_load = agents_to_test, progon_number=progon_to_load, cache_dir=cache_dir)
             for agent_id in agents_to_test:
                 self.env.agents[agent_id].epsilon = self.env.agents[agent_id].min_epsilon
@@ -790,18 +791,18 @@ def altruist_horizon_iterator_testing():
     time_horizon_max_by_scenario = {
         # "2c": [1, 3, 9, 13],
         "3b": [1, 3, 9, 13],
-        # "4c": [1, 3, 9, 13, 20]
+        # "4c": [3]
     }
     for gamma in [0.7]:
         for scenario in time_horizon_max_by_scenario:
             for time_horizon in time_horizon_max_by_scenario[scenario]:
                 match scenario:
                     # case "2c":
-                        # SimulationManager().Scenario_2c(gamma=gamma, time_horizon=time_horizon, time_horizon_max = len(time_horizon_max_by_scenario[scenario]), learning_flag=False, testing_flag=True)
+                    #     SimulationManager().Scenario_2c(gamma=gamma, time_horizon=time_horizon, time_horizon_max = len(time_horizon_max_by_scenario[scenario]), learning_flag=False, testing_flag=True)
                     case "3b":
                         SimulationManager().Scenario_3b(gamma=gamma, time_horizon=time_horizon, time_horizon_max = len(time_horizon_max_by_scenario[scenario]), learning_flag=False, testing_flag=True)
                     # case "4c":
-                        # SimulationManager().Scenario_4c(gamma=gamma, time_horizon=time_horizon, time_horizon_max = len(time_horizon_max_by_scenario[scenario]), learning_flag=False, testing_flag=True)
+                    #     SimulationManager().Scenario_4c(gamma=gamma, time_horizon=time_horizon, time_horizon_max = len(time_horizon_max_by_scenario[scenario]), learning_flag=False, testing_flag=True)
 
 
 if __name__ == "__main__":
