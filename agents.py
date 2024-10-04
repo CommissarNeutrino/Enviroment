@@ -140,7 +140,7 @@ class Altruist(BaseAgent):
 
         state = self.states_of_env[self.time - self.time_horizon]["altruist_position"]
         action_id = self.states_of_env[self.time - self.time_horizon]["altruist_action"]
-        if self._allowed_step(state, self._action_to_direction[action_id]):
+        if self._allowed_step_altruist(state, self._action_to_direction[action_id]):
             new_q = self.get_q(state, action_id) + self.alpha_changing * score
         else:
             new_q = self.get_q(state, action_id) - self.alpha * self.negative_reward
@@ -161,8 +161,6 @@ class Altruist(BaseAgent):
             case _:
                 return self.action_space.sample()
 
-
-
     def _allowed_step(self, agent_location, direction):
 
         new_position = self.decision_grid_edges(agent_location, direction)
@@ -170,12 +168,20 @@ class Altruist(BaseAgent):
         #print(new_position, agent_location, direction, agent_location + direction)
         #print("check", np.array_equal(new_position, agent_location + direction))
 
-        # if not np.array_equal(new_position, agent_location + direction):
-        #     return False
-        if self.decision_other_agents(new_position):
+        if not np.array_equal(new_position, agent_location + direction):
+            return False
+        if (self.decision_walls_positions(new_position) 
+            and self.decision_doors_positions(new_position)
+            and self.decision_other_agents_patron(new_position)):
             return True
-        # if (self.decision_walls_positions(new_position) and self.decision_doors_positions(new_position)):
-                # return False
+        return False
+
+    def _allowed_step_altruist(self, agent_location, direction):
+        new_position = self.decision_grid_edges(agent_location, direction)
+        #print(new_position, agent_location, direction, agent_location + direction)
+        #print("check", np.array_equal(new_position, agent_location + direction))
+        if self.decision_other_agents_altruist(new_position):
+            return True
         return False
 
     
@@ -198,8 +204,13 @@ class Altruist(BaseAgent):
             return True
         return False
 
-    def decision_other_agents(self, new_position):
-        if tuple(new_position) == self.states_of_env[self.score_time]["patron_position"]:
+    def decision_other_agents_patron(self, new_position):
+        if tuple(new_position) == self.states_of_env[self.score_time]["altruist_position"]:
+            return False
+        return True
+
+    def decision_other_agents_altruist(self, new_position):
+        if tuple(new_position) == self.states_of_env[self.time - self.time_horizon]["patron_position"]:
             return False
         return True
 
