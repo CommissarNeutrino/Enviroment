@@ -3,4 +3,10 @@ __pycache__
 __pycache__/*
 *.pyc
 .idea
+.gitignore
+.DS_Store
 /video/frames/*
+cache_less_old/
+cache_old/
+video/frames/
+cache/

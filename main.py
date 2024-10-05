@@ -525,7 +525,7 @@ class SimulationManager:
             steps_list.append(steps)
         return steps_list
     
-    def special_training_function(self, num_episodes = 3000):
+    def special_training_function(self, num_episodes = 30000):
         steps_list = []
         #print("self.env.agents", self.env.agents)
         for episode in range(num_episodes):

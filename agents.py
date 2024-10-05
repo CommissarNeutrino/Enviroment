@@ -76,7 +76,7 @@ class Altruist(BaseAgent):
     def __init__(
             self,
             action_space,
-            alpha=0.1,
+            alpha=0.5,
             gamma=0.99,
             epsilon=1.0,
             epsilon_decay=0.995,
