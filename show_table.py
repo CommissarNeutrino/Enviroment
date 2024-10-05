@@ -14,8 +14,7 @@ def visualize_grid(df, cell_size=5):
         'up': '▲',
         'down': '▼',
         'left': '◀--',
-        'right': '--▶',
-        None: '...'
+        'right': '--▶'
     }
 
     # Печатаем заголовок с номерами столбцов
@@ -54,9 +53,9 @@ def visualize_grid(df, cell_size=5):
                 row_second += "--▶".center(cell_size) + "|"
                 row_third += "   ".center(cell_size) + "|"
             else:  # Empty or unknown direction
-                row_first += "...".center(cell_size) + "|"
-                row_second += "...".center(cell_size) + "|"
-                row_third += "...".center(cell_size) + "|"
+                row_first += "".join("·" * cell_size).center(cell_size) + "|"
+                row_second += "".join("·" * cell_size).center(cell_size) + "|"
+                row_third += "".join("·" * cell_size).center(cell_size) + "|"
 
         # Печатаем строки для текущего ряда
         print(f"   |{row_first}")
@@ -120,7 +119,6 @@ states = set(state for (state, action) in data.keys())
 
 # Заменим числовые действия на их строковые эквиваленты (направления)
 direction_columns = [action_to_direction[action] for action in sorted(actions)]
-direction_columns.append("Max")
 
 # Создаем DataFrame с индексами для состояний и столбцами для направлений
 df = pd.DataFrame(index=sorted(states), columns=direction_columns)
