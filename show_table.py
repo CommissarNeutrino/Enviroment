@@ -3,7 +3,7 @@ import os
 import numpy as np
 import sys
 
-def visualize_grid(df, cell_size=3):
+def visualize_grid(df, cell_size=5):
     # Получаем уникальные координаты
     states = df.index
     grid_size_x = max(state[0] for state in states) + 1
