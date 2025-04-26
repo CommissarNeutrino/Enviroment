@@ -3,13 +3,13 @@ from typing import Dict, Tuple
 import os
 import sys
 
-def get_data(scenario_num=None, agent_type=None, progon_number=None) -> Dict[Tuple, float]:
+def get_data(scenario_num=None, agent_type="patron", progon_number=None) -> Dict[Tuple, float]:
 
     help_message = """
 Этот скрипт загружает сохранённые Q-таблицы, преобразует их в таблицу действий и визуализирует оптимальные направления движения агента.
 
 Использование:
-    python show_table.py scenario_num=<номер_сценария> [agent_type=<тип_агента>] [progon_num=<номер_прогона>]
+    python analysis_scripts/show_table.py scenario_num=<номер_сценария> agent_type=<тип_агента> progon_num=<номер_прогона>
 
 Параметры:
     scenario_num  — номер сценария для загрузки (например: 1a, 2b). Обязательно.
@@ -18,8 +18,8 @@ def get_data(scenario_num=None, agent_type=None, progon_number=None) -> Dict[Tup
     --help        — вывести это сообщение и завершить выполнение.
 
 Примеры запуска:
-    python show_table.py scenario_num=1a
-    python show_table.py scenario_num=2b agent_type=altruist progon_num=5
+    python analysis_scripts/show_table.py scenario_num=1a
+    python analysis_scripts/show_table.py scenario_num=2b agent_type=altruist progon_num=5
 
 Описание работы:
     1. Скрипт ищет сохранённые данные в папке cache/<сценарий>/progon_<номер>/table_<agent_type>.

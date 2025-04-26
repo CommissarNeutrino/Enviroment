@@ -21,6 +21,7 @@
 
 ```bash
 git clone https://github.com/CommissarNeutrino/Enviroment.git
+cd Enviroment
 ```
 
 2. Настройте виртуальное окружение:
@@ -46,7 +47,7 @@ pip install -r requirements.txt
 Пример использования:
 
 ```bash
-python main.py scenario_num=1a
+python3 main.py scenario_num=1a
 ```
 
 Параметры командной строки:
@@ -89,7 +90,7 @@ python main.py scenario_num=1a
 Пример использования:
 
 ```bash
-python python show_table.py scenario_num=<номер_сценария> [agent_type=<тип_агента>] [progon_num=<номер_прогона>]
+python3 analysis_scripts/show_table.py scenario_num=<номер_сценария> agent_type=<тип_агента> progon_num=<номер_прогона>
 ```
 
 Параметры:
