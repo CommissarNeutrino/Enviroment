@@ -60,16 +60,10 @@ class Patron(BaseAgent):
             return self.action_space.sample()  # Exploration
         else:
             all_actions = range(self.action_space.n)
-            # print("all_actions", all_actions)
-            # print("agent_location", agent_location)
-            # print("action_list", [self.get_q(agent_location, a) for a in all_actions])
-            # print("max", max(all_actions, key=lambda a: self.get_q(agent_location, a)))
             return max(all_actions, key=lambda a: self.get_q(agent_location, a))  # Exploitation
 
     def decay_epsilon(self):
         self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
-
-
 
 
 class Altruist(BaseAgent):
@@ -150,7 +144,6 @@ class Altruist(BaseAgent):
         self.time += 1
         match self.status:
             case "random":
-                #return self.action_space.sample()
                 return self.action_space.sample()
             case "training":
                 if np.random.rand() < self.epsilon:
@@ -179,7 +172,7 @@ class Altruist(BaseAgent):
 
     def decision_grid_edges(self, agent_location, direction):
         new_position = np.clip(
-            agent_location + direction, [0, 0], [self.states_of_env["length_of_grid"] - 1, self.states_of_env["height_of_grid"] - 1] #!!!!!!!!!
+            agent_location + direction, [0, 0], [self.states_of_env["length_of_grid"] - 1, self.states_of_env["height_of_grid"] - 1]
         )
         return new_position
 
@@ -210,63 +203,3 @@ class Altruist(BaseAgent):
         self.decay_epsilon_counter += 1
         if self.decay_epsilon_counter > 300:
             self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
-
-# Создаем окружение
-# env = gym.make('gym_examples/GridWorld-v0', render_mode='rgb_array')
-# agent = QLearningAgent(env.action_space)
-
-# num_episodes = 1000
-# rewards = []
-# for episode in range(num_episodes):
-#     state, _ = env.reset()
-#     state = tuple(state['agent']) + tuple(state['target'])
-#     total_reward = 0
-#     steps = 0
-#     done = False
-    
-#     while not done:
-#         steps += 1
-#         action = agent.select_action(state)
-#         next_state, reward, done, _, _ = env.step(action)
-#         next_state = tuple(next_state['agent']) + tuple(next_state['target'])
-#         agent.update_q(state, action, reward, next_state)
-#         state = next_state
-#         total_reward += reward
-#         env.render()
-
-#     agent.decay_epsilon()
-#     print(f"Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
-#     rewards.append(steps)
-
-# plt.plot(rewards)
-# plt.xlabel('Episode')
-# plt.ylabel('Total Steps')
-# plt.title('Learning Progress')
-# plt.show()
-# env.close()
-
-# # Устанавливаем epsilon на минимальное значение и переводим в режим наблюдения
-# agent.epsilon = 0.01
-# env = gym.make('gym_examples/GridWorld-v0', render_mode='human')
-
-# # Запускаем агента для тестирования его поведения
-# num_test_episodes = 10
-# for episode in range(num_test_episodes):
-#     state, _ = env.reset()
-#     state = tuple(state['agent']) + tuple(state['target'])
-#     total_reward = 0
-#     steps = 0
-#     done = False
-    
-#     while not done:
-#         steps += 1
-#         action = agent.select_action(state)
-#         next_state, reward, done, _, _ = env.step(action)
-#         next_state = tuple(next_state['agent']) + tuple(next_state['target'])
-#         state = next_state
-#         total_reward += reward
-#         env.render()
-
-#     print(f"Test Episode {episode + 1}: Total Reward = {total_reward}, Steps - {steps}")
-
-# env.close()

@@ -1,13 +1,10 @@
-import os  # для Q table нужно
+import os
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
 from typing import List
-from agents import Patron, Altruist  # берем классы агентов из соседнего файла
-from env import WorldEnv  # берем к4ласс среды из соседнего файла
-
-# Технический долг: посмотреть как реализуется action space в гимназиум по-нормальному?
-
+from agents import Patron, Altruist
+from env import WorldEnv
 class SimulationManager:
 
     def Scenario_1a(
@@ -147,7 +144,6 @@ class SimulationManager:
         self.env.agents[agent_id].status = "random"
         if learning_flag:
             self.env.render_mode = "rgb_array"
-            #print("qaaaaaaa self.env.agents", self.env.agents)
             rewards = self.special_training_function()
             self.cache_tables(cache_dir="cache/2b")
             self.build_plot(rewards)
@@ -701,27 +697,65 @@ class SimulationManager:
 
 
 def scenario_chooser():
-    import sys  # Это для обработки аргументов командной строки
+    import sys
+    help_message = """
+Параметры командной строки:
 
-    # по умолчанию запускается на обучение агента + демонстрацию (как и было)
+-- scenario_num=<тип_карты>    Обязательный параметр. Указывает, какой сценарий запускать.
+                               Возможные варианты: 1a, 1b, 2a, 2b, 2c, 3a, 3b, 3c, 4a, 4b, 4c и т.д.
+
+-- progon_num=<номер>          Опциональный. Указывает номер ранее сохранённого прогона
+                               для загрузки данных при тестировании.
+
+-- no_learn                    Отключает этап обучения. Используется, если необходимо только тестирование.
+
+-- no_test                     Отключает этап тестирования. Используется, если необходимо только обучение.
+
+Примеры запуска:
+
+1. Обучение и тестирование на карте 1a:
+   python main.py scenario_num=1a
+
+2. Только обучение (без тестирования):
+   python main.py scenario_num=3b no_test
+
+3. Только тестирование ранее обученного агента:
+   python main.py scenario_num=3b no_learn progon_num=2
+
+Дополнительные функции (вызываются вручную в коде):
+
+- altruist_horizon_iterator_training():
+  Автоматический прогон обучения с разными значениями γ и горизонтом времени
+  для сценариев 2c, 3b, 4c.
+
+- altruist_horizon_iterator_testing():
+  Тестирование агентов после обучения, по заранее заданным конфигурациям.
+===================================================
+"""
+
+    # Обработка помощи
+    if "--help" in sys.argv or not any(arg.startswith("scenario_num") for arg in sys.argv):
+        print(help_message)
+        return
+
+    # По умолчанию: обучение и демонстрация включены
     learning_needed = True
     testing_needed = True
-
-    # можно передать из командной строки агрументы no_learn или no_test и тогда будет что-то одно
-    # ПЕРЕПИСАТЬ НА ЛОГИКУ КОНЕЧНОГО ПОЛЬЗОВАТЕЛЯ ***
-    map_type = "4b"
     progon_number = None
-    if "no_learn" in sys.argv:
-        learning_needed = False
-    if "no_test" in sys.argv:
-        testing_needed = False
+    scenario_num = None
+
+    # Обработка аргументов
     for arg in sys.argv:
-        if arg.startswith("map_type"):
-            map_type=arg.split("=")[1]
-    for arg in sys.argv:
-        if arg.startswith("progon_num"):
-            progon_number=arg.split("=")[1]
-    match map_type:
+        if arg == "no_learn":
+            learning_needed = False
+        elif arg == "no_test":
+            testing_needed = False
+        elif arg.startswith("scenario_num="):
+            scenario_num = arg.split("=")[1]
+        elif arg.startswith("progon_num="):
+            progon_number = arg.split("=")[1]
+
+    match scenario_num:
         case "1a":
             SimulationManager().Scenario_1a(learning_flag=learning_needed, testing_flag=testing_needed)
         case "1b":
@@ -745,7 +779,7 @@ def scenario_chooser():
         case "4c_testing_params":
             SimulationManager().Scenario_4c_testing_params(learning_flag=learning_needed, testing_flag=testing_needed)
         case _:
-            print("Error: Choose scenario to play out with attribute map_type={choose type}")
+            print("Error: Choose scenario to play out with attribute scenario_num={choose type}")
 
 def altruist_horizon_iterator_training():
     time_horizon_max_by_scenario = {
@@ -775,12 +809,12 @@ def altruist_horizon_iterator_testing():
         for scenario in time_horizon_max_by_scenario:
             for time_horizon in time_horizon_max_by_scenario[scenario]:
                 match scenario:
-                    # case "2c":
-                    #     SimulationManager().Scenario_2c(gamma=gamma, time_horizon=time_horizon, time_horizon_max = len(time_horizon_max_by_scenario[scenario]), learning_flag=False, testing_flag=True)
+                    case "2c":
+                        SimulationManager().Scenario_2c(gamma=gamma, time_horizon=time_horizon, time_horizon_max = len(time_horizon_max_by_scenario[scenario]), learning_flag=False, testing_flag=True)
                     case "3b":
                         SimulationManager().Scenario_3b(gamma=gamma, time_horizon=time_horizon, time_horizon_max = len(time_horizon_max_by_scenario[scenario]), learning_flag=False, testing_flag=True)
-                    # case "4c":
-                    #     SimulationManager().Scenario_4c(gamma=gamma, time_horizon=time_horizon, time_horizon_max = len(time_horizon_max_by_scenario[scenario]), learning_flag=False, testing_flag=True)
+                    case "4c":
+                        SimulationManager().Scenario_4c(gamma=gamma, time_horizon=time_horizon, time_horizon_max = len(time_horizon_max_by_scenario[scenario]), learning_flag=False, testing_flag=True)
 
 
 if __name__ == "__main__":
